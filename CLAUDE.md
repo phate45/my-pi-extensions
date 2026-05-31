@@ -32,24 +32,34 @@ This package has two jobs:
 
 The Claude-compat layer is the important part. It teaches Pi how to discover `.claude` resources, preprocess Claude-flavored markdown, and load local context overrides without duplicating content.
 
+The extension tree is split into three buckets:
+
+- `extensions/cc-like/` — actual extension entrypoints for Claude Code-like behavior
+- `extensions/my-stuff/` — actual extension entrypoints for personal Pi customizations
+- `extensions/**/lib/` — implementation helpers only, never extension entrypoints
+
 ## Package Layout
 
-- `package.json` — Pi package manifest; exposes `./extensions` and `./themes`
+- `package.json` — Pi package manifest; explicitly lists actual extension entrypoints under `extensions/cc-like/*.ts` and `extensions/my-stuff/*.ts`, plus `./themes`
 - `themes/nightowl.json` — imported theme
-- `extensions/context.ts` — custom `/context` view with context-window estimates, loaded-skill tracking, and effective context reporting
-- `extensions/custom-header.ts` — startup header with loaded context/skills/prompts/extensions summary
-- `extensions/tps-tracker.ts` — generation tokens/sec footer and final run notification
-- `extensions/web-research.ts` — `web_research` tool backed by Codex CLI
-- `extensions/fish-user-bash.ts` — runs user `!` / `!!` commands through fish with curated aliases
-- `extensions/git-context.ts` — snapshots short git repo state at session start and injects it into the system prompt when Pi starts inside a worktree
-- `extensions/interactive-at-read.ts` — turns interactive `@path` references into hidden read-tool payloads plus a visible read marker
-- `extensions/claude-skill-paths.ts` — adds `.claude/skills` directories to Pi skill discovery
-- `extensions/claude-command-paths.ts` — adds `.claude/commands` directories to Pi prompt discovery
-- `extensions/skill-tool.ts` — registers the model-facing `skill` tool and owns `/skill:name` execution
-- `extensions/claude-markdown-preprocessor.ts` — preprocesses prompt markdown with `!` and `@`
-- `extensions/00-system-prompt-markdown-preprocessor.ts` — lets `SYSTEM.md` use inline `!` and `@` expansion
-- `extensions/10-claude-context-local-files.ts` — extends context loading to include `.local.md` companions
-- `extensions/lib/` — shared helpers for context discovery, preprocessing, skill execution, prompt shims, and startup summaries
+- `extensions/cc-like/` — Claude Code-like shim entrypoints
+  - `00-system-prompt-markdown-preprocessor.ts` — lets `SYSTEM.md` use inline `!` and `@` expansion
+  - `10-cc-context-local-files.ts` — extends context loading to include `.local.md` companions
+  - `cc-command-paths.ts` — adds `.claude/commands` directories to Pi prompt discovery
+  - `cc-markdown-preprocessor.ts` — preprocesses prompt markdown with `!` and `@`
+  - `cc-skill-paths.ts` — adds `.claude/skills` directories to Pi skill discovery
+  - `context.ts` — custom `/context` view with context-window estimates, loaded-skill tracking, and effective context reporting
+  - `custom-header.ts` — startup header with loaded context/skills/prompts/extensions summary
+  - `git-context.ts` — snapshots short git repo state at session start and injects it into the system prompt when Pi starts inside a worktree
+  - `interactive-at-read.ts` — turns interactive `@path` references into hidden read-tool payloads plus a visible read marker
+  - `skill-tool.ts` — registers the model-facing `skill` tool and owns `/skill:name` execution
+  - `lib/` — shim internals for context discovery, markdown preprocessing, skill execution, startup summaries, and extension-runtime monkey patches
+- `extensions/my-stuff/` — personal Pi customization entrypoints
+  - `fish-user-bash.ts` — runs user `!` / `!!` commands through fish with curated aliases
+  - `multi-edit.ts` — custom multi-file edit tool
+  - `tps-tracker.ts` — generation tokens/sec footer and final run notification
+  - `web-research.ts` — `web_research` tool backed by Codex CLI
+  - `whimsical.ts` / `yeet.ts` — local experimental extensions
 
 ## Local Task Runner
 
@@ -69,10 +79,10 @@ just typecheck-context-stack
 ### When editing context behavior
 
 Start with:
-- `extensions/lib/claude-context.ts`
-- `extensions/10-claude-context-local-files.ts`
-- `extensions/lib/startup-summary.ts`
-- `extensions/context.ts`
+- `extensions/cc-like/lib/cc-context.ts`
+- `extensions/cc-like/10-cc-context-local-files.ts`
+- `extensions/cc-like/lib/startup-summary.ts`
+- `extensions/cc-like/context.ts`
 
 Keep these aligned:
 1. prompt-loaded context files
@@ -84,20 +94,20 @@ Keep these aligned:
 ### When editing command preprocessing
 
 Start with:
-- `extensions/claude-markdown-preprocessor.ts`
-- `extensions/claude-command-paths.ts`
+- `extensions/cc-like/cc-markdown-preprocessor.ts`
+- `extensions/cc-like/cc-command-paths.ts`
 
-Keep `claude-markdown-preprocessor.ts` prompt-focused. It should not execute skills, preprocess raw skill reads, or expand `/skill:*` prompt shims.
+Keep `cc-markdown-preprocessor.ts` prompt-focused. It should not execute skills, preprocess raw skill reads, or expand `/skill:*` prompt shims.
 
 ### When editing skill behavior
 
 Start with:
-- `extensions/skill-tool.ts`
-- `extensions/lib/skill-execution.ts`
-- `extensions/lib/skill-prompt-shims.ts`
-- `extensions/lib/claude-skill-discovery.ts`
-- `extensions/claude-skill-paths.ts`
-- `extensions/lib/startup-summary.ts`
+- `extensions/cc-like/skill-tool.ts`
+- `extensions/cc-like/lib/skill-execution.ts`
+- `extensions/cc-like/lib/skill-prompt-shims.ts`
+- `extensions/cc-like/lib/cc-skill-discovery.ts`
+- `extensions/cc-like/cc-skill-paths.ts`
+- `extensions/cc-like/lib/startup-summary.ts`
 
 Keep these aligned:
 1. model-facing skill list and `disable-model-invocation`
@@ -112,8 +122,8 @@ For skill execution, `${SKILL_DIR}` must come from `path.dirname(SKILL.md)`, not
 ### When editing system-prompt preprocessing
 
 Start with:
-- `extensions/00-system-prompt-markdown-preprocessor.ts`
-- `extensions/lib/claude-context.ts`
+- `extensions/cc-like/00-system-prompt-markdown-preprocessor.ts`
+- `extensions/cc-like/lib/cc-context.ts`
 - `~/.pi/agent/SYSTEM.md`
 - `~/.pi/agent/render-pi-doc-paths.sh`
 
@@ -122,7 +132,7 @@ System-prompt preprocessing should inline stdout directly, not wrap the generate
 ### When editing web research behavior
 
 Start with:
-- `extensions/web-research.ts`
+- `extensions/my-stuff/web-research.ts`
 
 Current design:
 - `web_research(query, depth?, freshness?)`

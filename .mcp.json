@@ -4,7 +4,7 @@
       "type": "stdio",
       "command": "node",
       "args": [
-        "/home/phate/BigProjects/context-wrapper/wrapper.bundle.mjs"
+        "/home/agent/BigProjects/context-wrapper/wrapper.bundle.mjs"
       ],
       "env": {
         "CLAUDE_PROJECT_DIR": "/home/agent/BigProjects/my-pi-extensions"

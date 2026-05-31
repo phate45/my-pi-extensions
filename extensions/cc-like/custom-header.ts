@@ -1,5 +1,6 @@
 import path from "node:path";
 import type { ExtensionAPI, ExtensionContext, Theme } from "@earendil-works/pi-coding-agent";
+import { visibleWidth, wrapTextWithAnsi } from "@earendil-works/pi-tui";
 import { buildStartupSummary, wrapCompactList, type StartupSummary } from "./lib/startup-summary.js";
 
 const RESET = "\x1b[0m";
@@ -59,6 +60,25 @@ function renderSection(theme: Theme, title: string, items: string[], width: numb
   return [theme.fg("mdHeading", `[${title}]`), ...wrapCompactList(items, width).map((line) => theme.fg("dim", line)), ""];
 }
 
+function wrapIndentedLine(line: string, width: number): string[] {
+  if (visibleWidth(line) <= width) return [line];
+
+  const indentMatch = line.match(/^(\s*)/u);
+  const indent = indentMatch?.[1] ?? "";
+  const content = line.slice(indent.length);
+  const contentWidth = Math.max(10, width - visibleWidth(indent));
+  const wrapped = wrapTextWithAnsi(content, contentWidth);
+  return wrapped.map((chunk) => `${indent}${chunk}`);
+}
+
+function renderPreformattedSection(theme: Theme, title: string, lines: string[], width: number): string[] {
+  return [
+    theme.fg("mdHeading", `[${title}]`),
+    ...lines.flatMap((line) => wrapIndentedLine(line, width).map((wrapped) => theme.fg("dim", wrapped))),
+    "",
+  ];
+}
+
 function renderHeader(width: number, subtitleText: string, theme: Theme, summary: StartupSummary | null) {
   const phase = 0;
   const lines = TITLE_LINES.map((line, row) => gradientText(center(line, width), phase + row * 0.045));
@@ -70,7 +90,7 @@ function renderHeader(width: number, subtitleText: string, theme: Theme, summary
   out.push(...renderSection(theme, "Context", summary.context, width));
   out.push(...renderSection(theme, "Skills", summary.skills, width));
   out.push(...renderSection(theme, "Prompts", summary.prompts, width));
-  out.push(...renderSection(theme, "Extensions", summary.extensions, width));
+  out.push(...renderPreformattedSection(theme, "Extensions", summary.extensions, width));
   return out;
 }
 

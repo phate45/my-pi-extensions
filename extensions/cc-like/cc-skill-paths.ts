@@ -1,5 +1,5 @@
 import type { ExtensionAPI } from "@earendil-works/pi-coding-agent";
-import { discoverClaudeSkillDirs } from "./lib/claude-skill-discovery.js";
+import { discoverClaudeSkillDirs } from "./lib/cc-skill-discovery.js";
 
 export default function claudeSkillPathsExtension(pi: ExtensionAPI) {
   pi.on("resources_discover", async (event) => {

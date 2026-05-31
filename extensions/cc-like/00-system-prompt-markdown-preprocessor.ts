@@ -3,7 +3,7 @@ import { readFileSync } from "node:fs";
 import {
   discoverSystemPromptPath,
   preprocessSystemPromptTemplate,
-} from "./lib/claude-context.js";
+} from "./lib/cc-context.js";
 
 export default function systemPromptMarkdownPreprocessorExtension(pi: ExtensionAPI) {
   pi.on("before_agent_start", async (event, ctx) => {

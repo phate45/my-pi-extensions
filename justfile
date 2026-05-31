@@ -13,21 +13,21 @@ typecheck *files:
 typecheck-all:
     bun x tsc {{tsc_flags}} $(fd -e ts . extensions -HI | sort)
 
-# Typecheck the Claude skill discovery / execution stack.
+# Typecheck the cc-like skill discovery / execution stack.
 typecheck-skill-stack:
     just typecheck \
-      extensions/lib/claude-skill-discovery.ts \
-      extensions/lib/skill-execution.ts \
-      extensions/lib/skill-prompt-shims.ts \
-      extensions/claude-skill-paths.ts \
-      extensions/skill-tool.ts
+      extensions/cc-like/lib/cc-skill-discovery.ts \
+      extensions/cc-like/lib/skill-execution.ts \
+      extensions/cc-like/lib/skill-prompt-shims.ts \
+      extensions/cc-like/cc-skill-paths.ts \
+      extensions/cc-like/skill-tool.ts
 
-# Typecheck the Claude context + markdown preprocessing stack.
+# Typecheck the cc-like context + markdown preprocessing stack.
 typecheck-context-stack:
     just typecheck \
-      extensions/lib/claude-context.ts \
-      extensions/lib/markdown-preprocess.ts \
-      extensions/lib/startup-summary.ts \
-      extensions/00-system-prompt-markdown-preprocessor.ts \
-      extensions/10-claude-context-local-files.ts \
-      extensions/claude-markdown-preprocessor.ts
+      extensions/cc-like/lib/cc-context.ts \
+      extensions/cc-like/lib/markdown-preprocess.ts \
+      extensions/cc-like/lib/startup-summary.ts \
+      extensions/cc-like/00-system-prompt-markdown-preprocessor.ts \
+      extensions/cc-like/10-cc-context-local-files.ts \
+      extensions/cc-like/cc-markdown-preprocessor.ts

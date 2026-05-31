@@ -4,7 +4,10 @@
   "type": "module",
   "keywords": ["pi-package", "pi-extension"],
   "pi": {
-    "extensions": ["./extensions"],
+    "extensions": [
+      "./extensions/cc-like/*.ts",
+      "./extensions/my-stuff/*.ts"
+    ],
     "themes": ["./themes"]
   },
   "dependencies": {
