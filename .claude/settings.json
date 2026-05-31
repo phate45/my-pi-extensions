@@ -1,0 +1,46 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(sort:*)",
+      "Bash(cat:*)",
+      "Bash(for:*)",
+      "Bash(ls:*)",
+      "Bash(fd:*)",
+      "Bash(jq:*)",
+      "Bash(eza:*)",
+      "Bash(rg:*)",
+      "Bash(chmod:*)",
+      "Bash(mkdir:*)",
+      "Bash(test:*)",
+      "Bash(tree:*)",
+      "Bash(find:*)",
+      "Bash(awk:*)",
+      "Bash(python3:*)",
+      "Bash(date:*)",
+      "Bash(grep:*)",
+      "Bash(wc:*)",
+      "Bash(git log:*)",
+      "Bash(git ls-tree:*)",
+      "Bash(git check-ignore:*)",
+      "Bash(git add:*)",
+      "Bash(git commit:*)",
+      "Bash(git restore:*)",
+      "mcp__fetch__fetch",
+      "mcp__sequential-thinking__sequentialthinking",
+      "WebSearch",
+      "WebFetch",
+      "Glob",
+      "Read(//tmp/**)",
+      "Skill(technical-writing)",
+      "Skill(writing-work-logs)",
+      "Skill(checkpointing)"
+    ],
+    "deny": [],
+    "ask": [],
+    "defaultMode": "acceptEdits"
+  },
+  "enabledMcpjsonServers": [
+    "fetch",
+    "sequential-thinking"
+  ]
+}

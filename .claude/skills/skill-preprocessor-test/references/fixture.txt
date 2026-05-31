@@ -1,0 +1,2 @@
+fixture_status=loaded
+This fixture proves @references/fixture.txt resolved relative to the skill directory.
