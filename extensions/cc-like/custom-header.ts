@@ -2,6 +2,7 @@ import path from "node:path";
 import type { ExtensionAPI, ExtensionContext, Theme } from "@earendil-works/pi-coding-agent";
 import { visibleWidth, wrapTextWithAnsi } from "@earendil-works/pi-tui";
 import { buildStartupSummary, wrapCompactList, type StartupSummary } from "./lib/startup-summary.js";
+import { onResourcesExtended, getResourcePatchStatus } from "./lib/runtime-resource-events.js";
 
 const RESET = "\x1b[0m";
 const BOLD = "\x1b[1m";
@@ -87,6 +88,7 @@ function renderHeader(width: number, subtitleText: string, theme: Theme, summary
 
   if (!summary) return out;
 
+  if (summary.warnings.length > 0) out.push(...renderSection(theme, "Warnings", summary.warnings, width));
   out.push(...renderSection(theme, "Context", summary.context, width));
   out.push(...renderSection(theme, "Skills", summary.skills, width));
   out.push(...renderSection(theme, "Prompts", summary.prompts, width));
@@ -98,30 +100,22 @@ export default function (pi: ExtensionAPI) {
   let requestRender: (() => void) | undefined;
   let currentModelId = "no model selected";
   let startupSummary: StartupSummary | null = null;
-  let pendingRefreshTimer: NodeJS.Timeout | undefined;
+  let pendingResourceWarningTimer: NodeJS.Timeout | undefined;
+  let unsubscribeResourcesExtended: (() => void) | undefined;
+  let expectResourcePatchObservation = false;
 
   function rebuildStartupSummary(ctx: ExtensionContext) {
-    startupSummary = buildStartupSummary(ctx, pi);
+    startupSummary = buildStartupSummary(ctx, pi, { expectExtendedResources: expectResourcePatchObservation });
     requestRender?.();
   }
 
-  function scheduleStartupSummaryRefresh(ctx: ExtensionContext) {
-    if (pendingRefreshTimer) clearTimeout(pendingRefreshTimer);
-
-    let attempts = 0;
-    const refresh = () => {
-      rebuildStartupSummary(ctx);
-      const hasDynamicCommands = (startupSummary?.skills.length ?? 0) > 0 || (startupSummary?.prompts.length ?? 0) > 0;
-      if (hasDynamicCommands || attempts >= 10) {
-        pendingRefreshTimer = undefined;
-        return;
-      }
-
-      attempts += 1;
-      pendingRefreshTimer = setTimeout(refresh, attempts === 1 ? 0 : 25);
-    };
-
-    refresh();
+  function armResourcePatchWarning(ctx: ExtensionContext) {
+    if (pendingResourceWarningTimer) clearTimeout(pendingResourceWarningTimer);
+    pendingResourceWarningTimer = setTimeout(() => {
+      pendingResourceWarningTimer = undefined;
+      expectResourcePatchObservation = true;
+      if (!getResourcePatchStatus().observed) rebuildStartupSummary(ctx);
+    }, 250);
   }
 
   function installHeader(ctx: ExtensionContext) {
@@ -129,6 +123,7 @@ export default function (pi: ExtensionAPI) {
 
     const projectName = path.basename(ctx.cwd) || "session";
     startupSummary = null;
+    expectResourcePatchObservation = false;
 
     ctx.ui.setHeader((tui, theme) => {
       requestRender = () => tui.requestRender();
@@ -142,6 +137,18 @@ export default function (pi: ExtensionAPI) {
       };
     });
 
+    unsubscribeResourcesExtended?.();
+    unsubscribeResourcesExtended = onResourcesExtended(() => {
+      if (pendingResourceWarningTimer) {
+        clearTimeout(pendingResourceWarningTimer);
+        pendingResourceWarningTimer = undefined;
+      }
+      expectResourcePatchObservation = false;
+      rebuildStartupSummary(ctx);
+    });
+
+    rebuildStartupSummary(ctx);
+
   }
 
   pi.on("session_start", (_event, ctx) => {
@@ -150,7 +157,8 @@ export default function (pi: ExtensionAPI) {
   });
 
   pi.on("resources_discover", (_event, ctx) => {
-    scheduleStartupSummaryRefresh(ctx);
+    expectResourcePatchObservation = true;
+    armResourcePatchWarning(ctx);
   });
 
   pi.on("model_select", (event) => {
@@ -160,9 +168,12 @@ export default function (pi: ExtensionAPI) {
 
   pi.on("session_shutdown", (_event, ctx) => {
     if (ctx.hasUI) ctx.ui.setHeader(undefined);
-    if (pendingRefreshTimer) clearTimeout(pendingRefreshTimer);
-    pendingRefreshTimer = undefined;
+    if (pendingResourceWarningTimer) clearTimeout(pendingResourceWarningTimer);
+    pendingResourceWarningTimer = undefined;
+    unsubscribeResourcesExtended?.();
+    unsubscribeResourcesExtended = undefined;
     requestRender = undefined;
     startupSummary = null;
+    expectResourcePatchObservation = false;
   });
 }

@@ -3,13 +3,19 @@ import path from "node:path";
 import { readFileSync } from "node:fs";
 import type { ExtensionAPI, ExtensionContext, SourceInfo } from "@earendil-works/pi-coding-agent";
 import { discoverExtendedContextFiles, getAgentDir } from "./cc-context.js";
-import { getLoadedExtensionsSnapshot } from "./runtime-loaded-extensions.js";
+import { getLoadedExtensionsPatchStatus, getLoadedExtensionsSnapshot } from "./runtime-loaded-extensions.js";
+import { getResourcePatchStatus } from "./runtime-resource-events.js";
 
 export type StartupSummary = {
   context: string[];
   skills: string[];
   prompts: string[];
   extensions: string[];
+  warnings: string[];
+};
+
+export type BuildStartupSummaryOptions = {
+  expectExtendedResources?: boolean;
 };
 
 function normalizeSkillName(name: string): string {
@@ -160,14 +166,32 @@ export function getPromptNames(pi: ExtensionAPI): string[] {
     .sort((a, b) => a.localeCompare(b));
 }
 
-export function buildStartupSummary(ctx: ExtensionContext, pi: ExtensionAPI): StartupSummary {
+export function buildStartupSummary(
+  ctx: ExtensionContext,
+  pi: ExtensionAPI,
+  options: BuildStartupSummaryOptions = {},
+): StartupSummary {
   const context = loadEffectiveContextFiles(ctx.cwd).map((file) => shortenPath(file.path, ctx.cwd));
+  const warnings: string[] = [];
+  const extensionPatch = getLoadedExtensionsPatchStatus();
+  const resourcePatch = getResourcePatchStatus();
+
+  if (extensionPatch.error) warnings.push(`[patch:loaded-extensions] ${extensionPatch.error}`);
+  else if (!extensionPatch.installed) warnings.push("[patch:loaded-extensions] patch not installed");
+  else if (!extensionPatch.observed) warnings.push("[patch:loaded-extensions] hook not observed; extension list may be stale");
+
+  if (resourcePatch.error) warnings.push(`[patch:resources] ${resourcePatch.error}`);
+  else if (!resourcePatch.installed) warnings.push("[patch:resources] patch not installed");
+  else if (options.expectExtendedResources && !resourcePatch.observed) {
+    warnings.push("[patch:resources] hook not observed after resources_discover; skills/prompts may be stale");
+  }
 
   return {
     context,
     skills: getSkillNames(pi),
     prompts: getPromptNames(pi),
     extensions: listLoadedExtensions(ctx.cwd),
+    warnings,
   };
 }
 
