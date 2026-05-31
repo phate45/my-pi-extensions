@@ -1,0 +1,11 @@
+# MCP server runtime files
+.mcp-rce/
+
+# Claude local settings and machine-specific configuration
+CLAUDE.local.md
+.claude/settings.local.json
+.claude/template_info.json
+.claude/vault-integration.md
+
+
+node_modules/

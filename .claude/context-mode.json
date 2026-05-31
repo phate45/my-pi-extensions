@@ -1,0 +1,17 @@
+{
+  "sources": [
+    {
+      "label": "work-logs",
+      "path": "/home/phate/Documents/second-brain/01_Projects/my-pi-extensions/logs",
+      "glob": "*.md",
+      "stripFrontmatter": true,
+      "prefixDates": true
+    },
+    {
+      "label": "research-notes",
+      "path": "/home/phate/Documents/second-brain/01_Projects/my-pi-extensions",
+      "glob": "*.md",
+      "stripFrontmatter": true
+    }
+  ]
+}
