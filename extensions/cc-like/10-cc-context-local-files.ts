@@ -6,7 +6,7 @@ import {
   maybeRealpath,
   preprocessContextMarkdown,
   replaceProjectContextBlock,
-} from "./lib/claude-context.js";
+} from "./lib/cc-context.js";
 
 export default function claudeContextLocalFilesExtension(pi: ExtensionAPI) {
   pi.on("before_agent_start", async (event, ctx) => {

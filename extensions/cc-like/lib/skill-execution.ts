@@ -7,7 +7,7 @@ import {
   renderFileEmbed,
   splitFrontmatter,
 } from "./markdown-preprocess.js";
-import { maybeRealpath } from "./claude-context.js";
+import { maybeRealpath } from "./cc-context.js";
 
 export type SkillMetadata = {
   name: string;

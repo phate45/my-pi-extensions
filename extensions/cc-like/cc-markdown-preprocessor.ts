@@ -8,7 +8,7 @@ import {
   renderFileEmbed,
   splitFrontmatter,
 } from "./lib/markdown-preprocess.js";
-import { maybeRealpath } from "./lib/claude-context.js";
+import { maybeRealpath } from "./lib/cc-context.js";
 
 function stripFrontmatter(raw: string): string {
   const { body } = splitFrontmatter(raw);

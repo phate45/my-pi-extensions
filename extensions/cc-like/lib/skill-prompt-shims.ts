@@ -1,7 +1,7 @@
 import { createHash } from "node:crypto";
 import { existsSync, mkdirSync, readdirSync, rmSync, statSync, writeFileSync } from "node:fs";
 import path from "node:path";
-import { discoverClaudeSkillDirs } from "./claude-skill-discovery.js";
+import { discoverClaudeSkillDirs } from "./cc-skill-discovery.js";
 import { readSkillDocument } from "./skill-execution.js";
 
 function escapeYamlString(value: string): string {
