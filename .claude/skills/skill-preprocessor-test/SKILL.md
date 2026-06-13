@@ -28,10 +28,12 @@ Report whether each of these expanded correctly:
 
 - `SKILL_DIR`: `${SKILL_DIR}`
 - `ARGUMENTS_FULL`: `$ARGUMENTS`
+- `ARGUMENTS_AT`: `$@`
 - `ARGUMENT_0_INDEXED`: `$ARGUMENTS[0]`
 - `ARGUMENT_1_INDEXED`: `$ARGUMENTS[1]`
-- `ARGUMENT_0_SHORTHAND`: `$0`
+- `ARGUMENT_0_ALIAS`: `$0`
 - `ARGUMENT_1_SHORTHAND`: `$1`
+- `ARGUMENT_2_SHORTHAND`: `$2`
 - `ARGUMENT_NAMED_ISSUE`: `$issue`
 - `ARGUMENT_NAMED_BRANCH`: `$branch`
 

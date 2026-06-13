@@ -40,6 +40,10 @@ export type SkillExpansionOptions = {
   argsText?: string;
 };
 
+function escapeRegExp(text: string): string {
+  return text.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
 function parseScalar(value: string): unknown {
   const trimmed = value.trim();
   if (trimmed === "true") return true;
@@ -201,16 +205,20 @@ function expandSkillVariables(body: string, skill: SkillSummary, options: SkillE
   const skillDir = maybeRealpath(skill.baseDir);
   const argsText = options.argsText?.trim() ?? "";
   const args = parseArgs(argsText);
-  const hasArgumentsToken = /\$ARGUMENTS(?:\[\d+])?/.test(body);
+  const hasArgumentsToken =
+    /\$ARGUMENTS(?:\[\d+])?|\$@|\$\d+/.test(body) ||
+    skill.arguments.some((name) => new RegExp(`\\$${escapeRegExp(name)}\\b`).test(body));
 
   let out = body.replace(/\$\{SKILL_DIR}/g, skillDir);
   out = out.replace(/\$ARGUMENTS\[(\d+)]/g, (_m, index) => args[Number(index)] ?? "");
-  out = out.replace(/\$ARGUMENTS/g, argsText);
-  out = out.replace(/\$(\d+)/g, (_m, index) => args[Number(index)] ?? "");
+  out = out.replace(/\$ARGUMENTS|\$@/g, argsText);
+  out = out.replace(/\$(\d+)/g, (_m, index) => {
+    const n = Number(index);
+    return n === 0 ? (args[0] ?? "") : (args[n - 1] ?? "");
+  });
 
   for (const [index, name] of skill.arguments.entries()) {
-    const escaped = name.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-    out = out.replace(new RegExp(`\\$${escaped}\\b`, "g"), args[index] ?? "");
+    out = out.replace(new RegExp(`\\$${escapeRegExp(name)}\\b`, "g"), args[index] ?? "");
   }
 
   if (argsText && !hasArgumentsToken) {
