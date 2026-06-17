@@ -127,6 +127,7 @@ export default function interactiveAtRead(pi: ExtensionAPI) {
   });
 
   pi.on("input", async (event, ctx) => {
+    if (ctx.mode !== "tui") return { action: "continue" as const };
     if (event.source === "extension") return { action: "continue" as const };
     if (!event.text.includes("@")) return { action: "continue" as const };
 
