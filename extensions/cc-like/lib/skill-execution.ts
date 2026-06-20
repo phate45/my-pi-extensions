@@ -1,12 +1,9 @@
 import type { ExtensionAPI, ExtensionContext } from "@earendil-works/pi-coding-agent";
 import { readFileSync } from "node:fs";
 import path from "node:path";
-import {
-  preprocessMarkdown,
-  renderCommandOutput,
-  renderFileEmbed,
-  splitFrontmatter,
-} from "./markdown-preprocess.js";
+import { parseShellLikeArgs } from "./cli-args.js";
+import { expandClaudeMarkdownResource } from "./claude-markdown-expansion.js";
+import { splitFrontmatter } from "./markdown-preprocess.js";
 import { maybeRealpath } from "./cc-context.js";
 
 export type SkillMetadata = {
@@ -157,49 +154,7 @@ export function readSkillDocument(skillPath: string): SkillDocument {
   return parseSkillDocument(readFileSync(skillPath, "utf8"));
 }
 
-export function parseArgs(input: string): string[] {
-  const out: string[] = [];
-  let current = "";
-  let quote: '"' | "'" | null = null;
-  let escaping = false;
-
-  for (const ch of input) {
-    if (escaping) {
-      current += ch;
-      escaping = false;
-      continue;
-    }
-
-    if (ch === "\\") {
-      escaping = true;
-      continue;
-    }
-
-    if (quote) {
-      if (ch === quote) quote = null;
-      else current += ch;
-      continue;
-    }
-
-    if (ch === '"' || ch === "'") {
-      quote = ch;
-      continue;
-    }
-
-    if (/\s/.test(ch)) {
-      if (current) {
-        out.push(current);
-        current = "";
-      }
-      continue;
-    }
-
-    current += ch;
-  }
-
-  if (current) out.push(current);
-  return out;
-}
+export const parseArgs = parseShellLikeArgs;
 
 function expandSkillVariables(body: string, skill: SkillSummary, options: SkillExpansionOptions): string {
   const skillDir = maybeRealpath(skill.baseDir);
@@ -256,16 +211,9 @@ export async function expandSkill(
 ): Promise<string> {
   const document = readSkillDocument(skill.path);
   const expandedBody = expandSkillVariables(document.body, skill, options);
-  const preprocessed = await preprocessMarkdown(expandedBody, skill.path, ctx.cwd, {
-    exec: async (command: string) => {
-      const result = await pi.exec("bash", ["-lc", command], { cwd: ctx.cwd, signal: ctx.signal });
-      return { stdout: result.stdout, stderr: result.stderr, code: result.code };
-    },
-    renderCommand: (command, result) => renderCommandOutput(command, result.stdout, result.stderr, result.code),
-    renderFile: (ref, resolvedPath, content) => {
-      const renderedContent = path.basename(resolvedPath) === "SKILL.md" ? splitFrontmatter(content).body.trimStart() : content;
-      return renderFileEmbed(ref, maybeRealpath(resolvedPath), renderedContent);
-    },
+  const preprocessed = await expandClaudeMarkdownResource(expandedBody, skill.path, ctx, pi, {
+    transformEmbeddedFile: (resolvedPath, content) =>
+      path.basename(resolvedPath) === "SKILL.md" ? splitFrontmatter(content).body.trimStart() : content,
   });
 
   const skillBlock = [

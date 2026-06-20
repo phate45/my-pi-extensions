@@ -1,11 +1,10 @@
 import type { ExtensionAPI, ExtensionContext, ToolResultEvent } from "@earendil-works/pi-coding-agent";
 import { readFileSync } from "node:fs";
+import { expandClaudeMarkdownResource } from "./lib/claude-markdown-expansion.js";
+import { parseShellLikeArgs } from "./lib/cli-args.js";
 import {
   extractTextContent,
   normalizeReadPath,
-  preprocessMarkdown,
-  renderCommandOutput,
-  renderFileEmbed,
   splitFrontmatter,
 } from "./lib/markdown-preprocess.js";
 import { maybeRealpath } from "./lib/cc-context.js";
@@ -24,54 +23,7 @@ function parseCommandLine(text: string): { name: string; argsText: string; args:
   const firstSpace = withoutSlash.search(/\s/);
   const name = firstSpace === -1 ? withoutSlash : withoutSlash.slice(0, firstSpace);
   const argsText = firstSpace === -1 ? "" : withoutSlash.slice(firstSpace).trim();
-  return { name, argsText, args: parseArgs(argsText) };
-}
-
-function parseArgs(input: string): string[] {
-  const out: string[] = [];
-  let current = "";
-  let quote: '"' | "'" | null = null;
-  let escaping = false;
-
-  for (const ch of input) {
-    if (escaping) {
-      current += ch;
-      escaping = false;
-      continue;
-    }
-
-    if (ch === "\\") {
-      escaping = true;
-      continue;
-    }
-
-    if (quote) {
-      if (ch === quote) {
-        quote = null;
-      } else {
-        current += ch;
-      }
-      continue;
-    }
-
-    if (ch === '"' || ch === "'") {
-      quote = ch;
-      continue;
-    }
-
-    if (/\s/.test(ch)) {
-      if (current) {
-        out.push(current);
-        current = "";
-      }
-      continue;
-    }
-
-    current += ch;
-  }
-
-  if (current) out.push(current);
-  return out;
+  return { name, argsText, args: parseShellLikeArgs(argsText) };
 }
 
 function substituteTemplateArgs(template: string, args: string[], argsText: string): string {
@@ -112,14 +64,7 @@ async function expandPromptTemplate(
   const raw = readFileSync(commandPath, "utf8");
   const body = stripFrontmatter(raw);
   const substituted = substituteTemplateArgs(body, args, argsText);
-  return await preprocessMarkdown(substituted, commandPath, ctx.cwd, {
-    exec: async (command: string) => {
-      const result = await pi.exec("bash", ["-lc", command], { cwd: ctx.cwd, signal: ctx.signal });
-      return { stdout: result.stdout, stderr: result.stderr, code: result.code };
-    },
-    renderCommand: (command, result) => renderCommandOutput(command, result.stdout, result.stderr, result.code),
-    renderFile: (ref, resolvedPath, content) => renderFileEmbed(ref, maybeRealpath(resolvedPath), content),
-  });
+  return await expandClaudeMarkdownResource(substituted, commandPath, ctx, pi);
 }
 
 export default function claudeMarkdownPreprocessor(pi: ExtensionAPI) {
@@ -162,14 +107,7 @@ export default function claudeMarkdownPreprocessor(pi: ExtensionAPI) {
     const original = extractTextContent((event as { content?: unknown }).content);
     if (original === null) return;
 
-    const processed = await preprocessMarkdown(original, absolutePath, ctx.cwd, {
-      exec: async (command: string) => {
-        const result = await pi.exec("bash", ["-lc", command], { cwd: ctx.cwd, signal: ctx.signal });
-        return { stdout: result.stdout, stderr: result.stderr, code: result.code };
-      },
-      renderCommand: (command, result) => renderCommandOutput(command, result.stdout, result.stderr, result.code),
-      renderFile: (ref, resolvedPath, content) => renderFileEmbed(ref, maybeRealpath(resolvedPath), content),
-    });
+    const processed = await expandClaudeMarkdownResource(original, absolutePath, ctx, pi);
 
     return {
       content: [{ type: "text" as const, text: processed }],

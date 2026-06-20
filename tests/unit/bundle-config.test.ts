@@ -3,8 +3,10 @@ import { mkdtemp, mkdir, rm, writeFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import {
+  getClaudeMarkdownExpansionConfig,
   getBundleConfigSources,
   getExtConfig,
+  isClaudeMarkdownInterpolationDisabled,
   isBundleConfigInitialized,
   isExtensionEnabled,
   isFeatureFlagEnabled,
@@ -159,6 +161,49 @@ describe("bundle-config", () => {
     expect(isManagedExtensionEnabled("custom-header", "ccLike")).toBe(false);
     expect(isManagedExtensionEnabled("web-research", "myStuff")).toBe(false);
     expect(isManagedExtensionEnabled("fish-user-bash", "myStuff")).toBe(true);
+  });
+
+  test("markdown interpolation disable knob defaults off and can be enabled via config", async () => {
+    expect(isClaudeMarkdownInterpolationDisabled()).toBe(false);
+    expect(getClaudeMarkdownExpansionConfig()).toEqual({});
+
+    const root = await makeTempDir();
+    const agentDir = path.join(root, "agent");
+    const projectDir = path.join(root, "project");
+    process.env.PI_CODING_AGENT_DIR = agentDir;
+
+    await writeJson(path.join(agentDir, "my-pi-settings.json"), {
+      extensions: {
+        "claude-markdown-expansion": {
+          config: { disabled: true },
+        },
+      },
+    });
+
+    refreshBundleConfig({ cwd: projectDir, isProjectTrusted: false });
+
+    expect(isClaudeMarkdownInterpolationDisabled()).toBe(true);
+    expect(getClaudeMarkdownExpansionConfig()).toEqual({ disabled: true });
+  });
+
+  test("markdown interpolation sub-flags can disable bash or includes independently", async () => {
+    const root = await makeTempDir();
+    const agentDir = path.join(root, "agent");
+    const projectDir = path.join(root, "project");
+    process.env.PI_CODING_AGENT_DIR = agentDir;
+
+    await writeJson(path.join(agentDir, "my-pi-settings.json"), {
+      extensions: {
+        "claude-markdown-expansion": {
+          config: { disableBash: true, disableIncludes: false },
+        },
+      },
+    });
+
+    refreshBundleConfig({ cwd: projectDir, isProjectTrusted: false });
+
+    expect(isClaudeMarkdownInterpolationDisabled()).toBe(false);
+    expect(getClaudeMarkdownExpansionConfig()).toEqual({ disableBash: true, disableIncludes: false });
   });
 
   test("reports invalid JSON as a non-fatal load error", async () => {

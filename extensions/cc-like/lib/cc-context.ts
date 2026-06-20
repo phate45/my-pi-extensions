@@ -1,12 +1,8 @@
 import os from "node:os";
 import path from "node:path";
 import { existsSync, readFileSync, realpathSync } from "node:fs";
-import {
-  preprocessMarkdown,
-  renderCommandOutput,
-  renderErrorBlock,
-  renderFileEmbed,
-} from "./markdown-preprocess.js";
+import type { ExtensionAPI, ExtensionContext } from "@earendil-works/pi-coding-agent";
+import { expandClaudeMarkdownResource } from "./claude-markdown-expansion.js";
 
 export type ContextFile = {
   path: string;
@@ -147,14 +143,11 @@ export function discoverExtendedContextFiles(cwd: string, agentDir = getAgentDir
 export async function preprocessContextMarkdown(
   raw: string,
   resourcePath: string,
-  cwd: string,
+  ctx: ExtensionContext,
+  pi: ExtensionAPI,
   discoveredContextPaths: Set<string>,
-  exec: (command: string) => Promise<{ stdout: string; stderr: string; code: number | null }>,
 ): Promise<string> {
-  return preprocessMarkdown(raw, resourcePath, cwd, {
-    exec,
-    renderCommand: (command, result) => renderCommandOutput(command, result.stdout, result.stderr, result.code),
-    renderFile: (ref, resolvedPath, content) => renderFileEmbed(ref, maybeRealpath(resolvedPath), content),
+  return expandClaudeMarkdownResource(raw, resourcePath, ctx, pi, {
     shouldSkipEmbed: (resolvedPath) => discoveredContextPaths.has(maybeRealpath(resolvedPath)),
   });
 }
@@ -162,18 +155,11 @@ export async function preprocessContextMarkdown(
 export async function preprocessSystemPromptTemplate(
   raw: string,
   resourcePath: string,
-  cwd: string,
-  exec: (command: string) => Promise<{ stdout: string; stderr: string; code: number | null }>,
+  ctx: ExtensionContext,
+  pi: ExtensionAPI,
 ): Promise<string> {
-  return preprocessMarkdown(raw, resourcePath, cwd, {
-    exec,
-    renderCommand: (_command, result) => {
-      const out: string[] = [];
-      if (result.stdout.trimEnd()) out.push(result.stdout.trimEnd());
-      if (result.stderr.trim()) out.push(renderErrorBlock(`stderr: ${_command}`, result.stderr.trimEnd()));
-      return out.length > 0 ? out.join("\n") : null;
-    },
-    renderFile: (_ref, _resolvedPath, content) => content.trimEnd(),
+  return expandClaudeMarkdownResource(raw, resourcePath, ctx, pi, {
+    fileRenderMode: "inline",
   });
 }
 

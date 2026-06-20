@@ -1,7 +1,7 @@
 import { createHash } from "node:crypto";
 import { existsSync, mkdirSync, readdirSync, rmSync, statSync, writeFileSync } from "node:fs";
 import path from "node:path";
-import { discoverClaudeSkillDirs } from "./cc-skill-discovery.js";
+import { discoverClaudeResourceDirs } from "./claude-resource-discovery.js";
 import { readSkillDocument } from "./skill-execution.js";
 
 function escapeYamlString(value: string): string {
@@ -70,7 +70,7 @@ export function generateSkillPromptShims(cwd: string): string | null {
   let count = 0;
   const seenNames = new Set<string>();
 
-  for (const skillDir of discoverClaudeSkillDirs(cwd)) {
+  for (const skillDir of discoverClaudeResourceDirs(cwd, "skills")) {
     for (const skillFile of discoverSkillFilesFromDir(skillDir)) {
       let document;
       try {

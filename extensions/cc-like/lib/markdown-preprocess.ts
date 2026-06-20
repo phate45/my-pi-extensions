@@ -12,6 +12,8 @@ export type MarkdownPreprocessHooks = {
   exec(command: string): Promise<ExecResult>;
   renderCommand(command: string, result: ExecResult): string | null;
   renderFile(ref: string, resolvedPath: string, content: string): string | null;
+  shouldExpandCommand?(command: string): boolean;
+  shouldExpandFile?(ref: string): boolean;
   shouldSkipEmbed?(resolvedPath: string): boolean;
 };
 
@@ -85,6 +87,15 @@ export function renderCommandOutput(command: string, stdout: string, stderr: str
   return chunks.join("\n");
 }
 
+export function renderCommandStdoutOnSuccess(command: string, stdout: string, stderr: string, code: number | null): string | null {
+  if (code === 0) {
+    const trimmed = stdout.trimEnd();
+    return trimmed ? trimmed : null;
+  }
+
+  return renderCommandOutput(command, stdout, stderr, code);
+}
+
 export function renderFileEmbed(ref: string, resolvedPath: string, content: string): string {
   return [
     `<file-content path=${JSON.stringify(ref)} resolved_path=${JSON.stringify(resolvedPath)}>`,
@@ -120,6 +131,10 @@ export async function preprocessMarkdown(
         out.push(line);
         continue;
       }
+      if (hooks.shouldExpandCommand?.(command) === false) {
+        out.push(line);
+        continue;
+      }
 
       try {
         const result = await hooks.exec(command);
@@ -134,6 +149,10 @@ export async function preprocessMarkdown(
     if (line.startsWith("@")) {
       const ref = line.slice(1).trim();
       if (!ref) {
+        out.push(line);
+        continue;
+      }
+      if (hooks.shouldExpandFile?.(ref) === false) {
         out.push(line);
         continue;
       }

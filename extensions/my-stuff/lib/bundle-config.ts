@@ -13,6 +13,12 @@ export type BundleSettings = {
   extensions?: Record<string, BundleExtensionSettings>;
 };
 
+export type ClaudeMarkdownExpansionConfig = {
+  disabled?: boolean;
+  disableBash?: boolean;
+  disableIncludes?: boolean;
+};
+
 type RefreshOptions = {
   cwd: string;
   isProjectTrusted: boolean;
@@ -238,6 +244,15 @@ export function isManagedExtensionEnabled(name: string, featureFlag?: string) {
 export function getExtConfig<T = Record<string, unknown>>(name: string) {
   const state = getState();
   return state.settings.extensions?.[name]?.config as T | undefined;
+}
+
+export function isClaudeMarkdownInterpolationDisabled() {
+  const config = getExtConfig<ClaudeMarkdownExpansionConfig>("claude-markdown-expansion");
+  return config?.disabled === true;
+}
+
+export function getClaudeMarkdownExpansionConfig(): ClaudeMarkdownExpansionConfig {
+  return getExtConfig<ClaudeMarkdownExpansionConfig>("claude-markdown-expansion") ?? {};
 }
 
 export function resetBundleConfigForTests() {

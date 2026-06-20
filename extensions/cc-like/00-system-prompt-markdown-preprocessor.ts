@@ -17,10 +17,7 @@ export default function systemPromptMarkdownPreprocessorExtension(pi: ExtensionA
     if (!event.systemPrompt.startsWith(rawPrompt)) return;
     if (!rawPrompt.includes("!") && !rawPrompt.includes("@")) return;
 
-    const processedPrompt = await preprocessSystemPromptTemplate(rawPrompt, systemPromptPath, ctx.cwd, async (command: string) => {
-      const result = await pi.exec("bash", ["-lc", command], { cwd: ctx.cwd, signal: ctx.signal });
-      return { stdout: result.stdout, stderr: result.stderr, code: result.code };
-    });
+    const processedPrompt = await preprocessSystemPromptTemplate(rawPrompt, systemPromptPath, ctx, pi);
 
     return {
       systemPrompt: `${processedPrompt}${event.systemPrompt.slice(rawPrompt.length)}`,

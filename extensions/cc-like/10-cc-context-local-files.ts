@@ -21,10 +21,7 @@ export default function claudeContextLocalFilesExtension(pi: ExtensionAPI) {
     const processedFiles = [];
 
     for (const file of extendedFiles) {
-      const processed = await preprocessContextMarkdown(file.content, file.path, ctx.cwd, discoveredSet, async (command: string) => {
-        const result = await pi.exec("bash", ["-lc", command], { cwd: ctx.cwd, signal: ctx.signal });
-        return { stdout: result.stdout, stderr: result.stderr, code: result.code };
-      });
+      const processed = await preprocessContextMarkdown(file.content, file.path, ctx, pi, discoveredSet);
       processedFiles.push({ path: file.path, content: processed });
     }
 
