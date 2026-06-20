@@ -12,6 +12,12 @@ It carries Pi-specific extensions, themes, and Claude-compatibility shims under 
 - Before changing behavior, identify which extension or helper owns it
 - Follow relevant Pi doc cross-references before implementing
 
+## Workflow
+
+- YAGNI first. When considering features, refactors, or tweaks, prefer the smallest change that solves the actual problem.
+- Use TDD with the existing test harness. Add or update targeted tests first, then implement, then run the relevant `just` or `bun test` checks.
+- Write proper commit messages with bodies. Do not leave important context trapped in a one-line summary.
+
 ## Pi Docs Source of Truth
 
 The Pi docs path is provided in the active system prompt context.
@@ -53,7 +59,7 @@ The extension tree is split into three buckets:
   - `git-context.ts` — snapshots short git repo state at session start and injects it into the system prompt when Pi starts inside a worktree
   - `interactive-at-read.ts` — turns interactive `@path` references into hidden read-tool payloads plus a visible read marker
   - `skill-tool.ts` — registers the model-facing `skill` tool and owns `/skill:name` execution
-  - `lib/` — shim internals for context discovery, markdown preprocessing, skill execution, startup summaries, and extension-runtime monkey patches
+  - `lib/` — shim internals for context discovery, shared markdown expansion, skill execution, startup summaries, and extension-runtime monkey patches
 - `extensions/my-stuff/` — personal Pi customization entrypoints
   - `fish-user-bash.ts` — runs user `!` / `!!` commands through fish with curated aliases
   - `multi-edit.ts` — custom multi-file edit tool
@@ -68,6 +74,7 @@ Prefer the local `justfile` recipes over ad-hoc compiler incantations.
 Useful commands:
 
 ```bash
+just test[-(unit|integration)]
 just typecheck path/to/file.ts [more files...]
 just typecheck-all
 just typecheck-skill-stack
@@ -94,10 +101,39 @@ Keep these aligned:
 ### When editing command preprocessing
 
 Start with:
+- `extensions/cc-like/lib/claude-markdown-expansion.ts`
+- `extensions/cc-like/lib/markdown-preprocess.ts`
 - `extensions/cc-like/cc-markdown-preprocessor.ts`
 - `extensions/cc-like/cc-command-paths.ts`
 
 Keep `cc-markdown-preprocessor.ts` prompt-focused. It should not execute skills, preprocess raw skill reads, or expand `/skill:*` prompt shims.
+
+Command preprocessing now routes through `lib/claude-markdown-expansion.ts`. Prefer changing shared expansion policy there instead of adding per-extension `preprocessMarkdown(...)` closures.
+
+Shared expansion policy:
+- successful `!cmd` → inline `stdout.trimEnd()` only
+- failing `!cmd` → emit full `<command-output ...>` XML
+- `@path` embeds stay profile-driven (`<file-content>` for prompts/skills/context, inline content for `SYSTEM.md`)
+
+Bundle-config kill switches live under:
+
+```json
+{
+  "extensions": {
+    "claude-markdown-expansion": {
+      "config": {
+        "disabled": true,
+        "disableBash": true,
+        "disableIncludes": true
+      }
+    }
+  }
+}
+```
+
+- `disabled` turns off both `!` and `@` interpolation
+- `disableBash` leaves `! ...` lines untouched
+- `disableIncludes` leaves `@...` lines untouched
 
 ### When editing skill behavior
 
@@ -106,6 +142,8 @@ Start with:
 - `extensions/cc-like/lib/skill-execution.ts`
 - `extensions/cc-like/lib/skill-prompt-shims.ts`
 - `extensions/cc-like/lib/cc-skill-discovery.ts`
+- `extensions/cc-like/lib/claude-markdown-expansion.ts`
+- `extensions/cc-like/lib/cli-args.ts`
 - `extensions/cc-like/cc-skill-paths.ts`
 - `extensions/cc-like/lib/startup-summary.ts`
 
@@ -123,11 +161,16 @@ For skill execution, `${SKILL_DIR}` must come from `path.dirname(SKILL.md)`, not
 
 Start with:
 - `extensions/cc-like/00-system-prompt-markdown-preprocessor.ts`
+- `extensions/cc-like/lib/claude-markdown-expansion.ts`
 - `extensions/cc-like/lib/cc-context.ts`
 - `~/.pi/agent/SYSTEM.md`
 - `~/.pi/agent/render-pi-doc-paths.sh`
 
-System-prompt preprocessing should inline stdout directly, not wrap the generated docs block in `<command-output>` tags.
+System-prompt preprocessing uses the shared markdown-expansion pipeline with `fileRenderMode: "inline"`.
+That means:
+- successful `!cmd` expansions inline stdout directly
+- failing `!cmd` expansions render full `<command-output ...>` XML
+- `@path` embeds inline raw content, not `<file-content>` wrappers
 
 ### When editing web research behavior
 
