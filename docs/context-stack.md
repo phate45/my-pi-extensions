@@ -1,0 +1,40 @@
+# Context Stack
+
+## Purpose
+
+The context stack makes Pi behave like Claude-style project context loading while still fitting Pi's runtime model.
+
+## Responsibilities
+
+This stack owns:
+- replacing stock project context with the bundle's effective context set
+- loading `.local.md` companions alongside primary project context files
+- deduping discovered context resources
+- keeping startup summaries and `/context` in sync
+
+## Invariants
+
+When context behavior changes, keep these views aligned:
+- prompt-loaded context files
+- manually read context files
+- discovered local companion files
+- startup header context listing
+- `/context` effective context listing
+
+If one of those moves without the others, the UI lies.
+
+## Typical changes
+
+Change this stack when you need to:
+- alter how primary project context is discovered or replaced
+- include or filter `.local.md` companion context
+- change how effective context is reported
+- keep startup context summaries honest
+
+## Verification
+
+After changes, confirm:
+- `CLAUDE.local.md` content appears alongside primary project context
+- effective context dedupes correctly
+- startup header context matches `/context`
+- prompt-visible context and effective context are describing the same reality
