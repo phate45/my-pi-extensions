@@ -6,17 +6,24 @@ Write a handoff document that lets a fresh agent continue this work in this repo
 
 Built-in file status checks:
 
-! if [ -f .tmp/handoff.md ]; then echo "handoff exists: .tmp/handoff.md"; else echo "handoff missing: .tmp/handoff.md"; fi
+handoff exists: .tmp/handoff.md
 
-! day=$(date +%F); file="$HOME/Documents/second-brain/01_Projects/my-pi-extensions/logs/$day.md"; if [ -f "$file" ]; then echo "work log exists: $file"; else echo "work log missing: $file"; fi
+work log exists: /home/agent/Documents/second-brain/01_Projects/my-pi-extensions/logs/2026-06-20.md
 
 Save the handoff to `.tmp/handoff.md` in this project. Overwrite the file if it already exists.
 
-Treat any provided arguments as steering for what the next session will focus on:
-- Next-session focus: ${ARGUMENTS:-continue the current work here}
+Treat any provided arguments as steering for what the next session should focus on.
+
+Steering text provided by the user:
+<handoff-steering>
+$ARGUMENTS
+</handoff-steering>
+
+If the steering block above is empty, default to: continue the current work here.
 
 Requirements for the handoff:
 - Summarize the current conversation, current code state, active decisions, open questions, and the next concrete steps.
+- Include a **Next session focus** section that reflects the provided steering when present, or the default focus when not.
 - Include a **Suggested Skills** section listing skills the next agent should invoke.
 - Do not duplicate content already captured in other artifacts such as plans, ADRs, issues, commits, or diffs. Reference those artifacts by path or URL instead.
 - Redact sensitive information such as API keys, passwords, tokens, or personally identifiable information.
