@@ -3,6 +3,7 @@ import { existsSync } from "node:fs";
 import { homedir } from "node:os";
 import { join } from "node:path";
 import { createLocalBashOperations, type ExtensionAPI } from "@earendil-works/pi-coding-agent";
+import { isManagedExtensionEnabled } from "./lib/bundle-config.js";
 
 function shellQuote(value: string) {
   return `'${value.replaceAll("'", `'\\''`)}'`;
@@ -24,6 +25,8 @@ function getFishInitPath() {
 }
 
 export default function (pi: ExtensionAPI) {
+  if (!isManagedExtensionEnabled("fish-user-bash", "myStuff")) return;
+
   const local = createLocalBashOperations();
 
   pi.on("user_bash", () => {

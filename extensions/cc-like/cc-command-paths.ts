@@ -2,6 +2,7 @@ import type { ExtensionAPI } from "@earendil-works/pi-coding-agent";
 import { existsSync, realpathSync } from "node:fs";
 import os from "node:os";
 import path from "node:path";
+import { isManagedExtensionEnabled } from "../my-stuff/lib/bundle-config.js";
 
 function maybeRealpath(dir: string): string {
   try {
@@ -35,6 +36,8 @@ function collectAncestorClaudeCommandDirs(cwd: string): string[] {
 }
 
 export default function claudeCommandPathsExtension(pi: ExtensionAPI) {
+  if (!isManagedExtensionEnabled("cc-command-paths", "ccLike")) return;
+
   pi.on("resources_discover", async (event) => {
     const promptPaths: string[] = [];
     const seen = new Set<string>();

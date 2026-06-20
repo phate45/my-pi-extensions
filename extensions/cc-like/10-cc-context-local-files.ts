@@ -7,8 +7,11 @@ import {
   preprocessContextMarkdown,
   replaceProjectContextBlock,
 } from "./lib/cc-context.js";
+import { isManagedExtensionEnabled } from "../my-stuff/lib/bundle-config.js";
 
 export default function claudeContextLocalFilesExtension(pi: ExtensionAPI) {
+  if (!isManagedExtensionEnabled("cc-context-local-files", "ccLike")) return;
+
   pi.on("before_agent_start", async (event, ctx) => {
     const stockFiles = discoverStockContextFiles(ctx.cwd, getAgentDir());
     const extendedFiles = discoverExtendedContextFiles(ctx.cwd, getAgentDir());

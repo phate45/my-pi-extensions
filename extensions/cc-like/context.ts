@@ -14,6 +14,7 @@ import { Container, Key, Text, matchesKey, type Component, type TUI } from "@ear
 import os from "node:os";
 import path from "node:path";
 import { getSkillNames, loadEffectiveContextFiles, shortenPath } from "./lib/startup-summary.js";
+import { isManagedExtensionEnabled } from "../my-stuff/lib/bundle-config.js";
 
 function formatUsd(cost: number): string {
 	if (!Number.isFinite(cost) || cost <= 0) return "$0.00";
@@ -338,6 +339,8 @@ class ContextView implements Component {
 }
 
 export default function contextExtension(pi: ExtensionAPI) {
+	if (!isManagedExtensionEnabled("context", "ccLike")) return;
+
 	// Track which skills were actually pulled in via read tool calls.
 	let lastSessionId: string | null = null;
 	let cachedLoadedSkills = new Set<string>();

@@ -1,5 +1,5 @@
 import type { ExtensionAPI, ExtensionContext } from "@earendil-works/pi-coding-agent";
-import { isExtensionEnabled } from "../my-stuff/lib/bundle-config.js";
+import { isManagedExtensionEnabled } from "../my-stuff/lib/bundle-config.js";
 
 type GitCounts = {
   staged: number;
@@ -82,7 +82,7 @@ async function buildGitContext(pi: ExtensionAPI, ctx: ExtensionContext): Promise
 }
 
 export default function gitContextExtension(pi: ExtensionAPI) {
-  if (!isExtensionEnabled("git-context")) return;
+  if (!isManagedExtensionEnabled("git-context", "ccLike")) return;
 
   let gitContext = "";
 

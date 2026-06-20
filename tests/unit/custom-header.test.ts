@@ -31,4 +31,20 @@ describe("custom-header extension", () => {
 
     expect([...handlers.keys()]).toEqual([]);
   });
+
+  test("skips registration when the ccLike feature flag is disabled", () => {
+    const { pi, handlers } = createMockExtensionAPI();
+    setBundleConfigForTests({
+      featureFlags: {
+        ccLike: false,
+      },
+      extensions: {
+        "custom-header": { enabled: true },
+      },
+    });
+
+    customHeaderExtension(pi);
+
+    expect([...handlers.keys()]).toEqual([]);
+  });
 });

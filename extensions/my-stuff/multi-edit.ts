@@ -19,6 +19,7 @@ import * as Diff from "diff";
 import { constants } from "fs";
 import { access as fsAccess, readFile as fsReadFile, unlink as fsUnlink, writeFile as fsWriteFile } from "fs/promises";
 import { isAbsolute, resolve as resolvePath } from "path";
+import { isManagedExtensionEnabled } from "./lib/bundle-config.js";
 
 const editItemSchema = Type.Object({
 	path: Type.Optional(Type.String({ description: "Path to the file to edit (relative or absolute). Inherits from top-level path if omitted." })),
@@ -721,6 +722,8 @@ async function applyClassicEdits(
 }
 
 export default function (pi: ExtensionAPI) {
+	if (!isManagedExtensionEnabled("multi-edit", "myStuff")) return;
+
 	pi.registerTool({
 		name: "edit",
 		label: "edit",

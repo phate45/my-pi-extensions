@@ -8,6 +8,7 @@ import {
   isBundleConfigInitialized,
   isExtensionEnabled,
   isFeatureFlagEnabled,
+  isManagedExtensionEnabled,
   refreshBundleConfig,
   resetBundleConfigForTests,
   takeBundleConfigErrors,
@@ -137,6 +138,27 @@ describe("bundle-config", () => {
     expect(isExtensionEnabled("git-context")).toBe(false);
     expect(getExtConfig("git-context")).toEqual({ source: "override" });
     expect(getBundleConfigSources()).toEqual([path.join(root, "override.json")]);
+  });
+
+  test("managed extension enablement combines feature flags and per-extension switches", async () => {
+    const root = await makeTempDir();
+    const agentDir = path.join(root, "agent");
+    const projectDir = path.join(root, "project");
+    process.env.PI_CODING_AGENT_DIR = agentDir;
+
+    await writeJson(path.join(agentDir, "my-pi-settings.json"), {
+      featureFlags: { ccLike: false, myStuff: true },
+      extensions: {
+        "custom-header": { enabled: true },
+        "web-research": { enabled: false },
+      },
+    });
+
+    refreshBundleConfig({ cwd: projectDir, isProjectTrusted: false });
+
+    expect(isManagedExtensionEnabled("custom-header", "ccLike")).toBe(false);
+    expect(isManagedExtensionEnabled("web-research", "myStuff")).toBe(false);
+    expect(isManagedExtensionEnabled("fish-user-bash", "myStuff")).toBe(true);
   });
 
   test("reports invalid JSON as a non-fatal load error", async () => {

@@ -29,4 +29,20 @@ describe("git-context extension", () => {
 
     expect([...handlers.keys()]).toEqual([]);
   });
+
+  test("skips registration when the ccLike feature flag is disabled", () => {
+    const { pi, handlers } = createMockExtensionAPI();
+    setBundleConfigForTests({
+      featureFlags: {
+        ccLike: false,
+      },
+      extensions: {
+        "git-context": { enabled: true },
+      },
+    });
+
+    gitContextExtension(pi);
+
+    expect([...handlers.keys()]).toEqual([]);
+  });
 });

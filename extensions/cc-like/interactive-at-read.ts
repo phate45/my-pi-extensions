@@ -3,6 +3,7 @@ import path from "node:path";
 import type { ImageContent } from "@earendil-works/pi-ai";
 import { createReadToolDefinition, getMarkdownTheme, type ExtensionAPI } from "@earendil-works/pi-coding-agent";
 import { Markdown } from "@earendil-works/pi-tui";
+import { isManagedExtensionEnabled } from "../my-stuff/lib/bundle-config.js";
 
 type FileRef = {
   path: string;
@@ -120,6 +121,8 @@ function extractImages(blocks: Array<TextBlock | ImageBlock>): ImageContent[] {
 }
 
 export default function interactiveAtRead(pi: ExtensionAPI) {
+  if (!isManagedExtensionEnabled("interactive-at-read", "ccLike")) return;
+
   pi.registerMessageRenderer<ReadMarkerDetails>(MESSAGE_TYPE, (message, _options, _theme) => {
     const markdown = message.details?.markdown;
     if (!markdown) return undefined;

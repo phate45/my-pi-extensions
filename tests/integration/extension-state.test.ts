@@ -119,4 +119,34 @@ describe("extension state integration", () => {
     expect(state.effective.extensions["git-context"]).toBe(false);
     expect(state.configSources).toEqual([path.join(env.agentDir, "my-pi-settings.json")]);
   });
+
+  test("ccLike feature flag disables cc-like commands while keeping extensions loaded", async () => {
+    const env = await setupEnv();
+    await writeJson(path.join(env.agentDir, "my-pi-settings.json"), {
+      featureFlags: {
+        ccLike: false,
+      },
+    });
+
+    const state = await runPiAndCaptureState({ env });
+
+    expect(state.loadedExtensions.some((entry) => entry.path.includes("extensions/cc-like/context.ts"))).toBe(true);
+    expect(state.effective.featureFlags.ccLike).toBe(false);
+    expect(state.commands).not.toContain("context");
+  });
+
+  test("myStuff feature flag disables my-stuff tools while keeping extensions loaded", async () => {
+    const env = await setupEnv();
+    await writeJson(path.join(env.agentDir, "my-pi-settings.json"), {
+      featureFlags: {
+        myStuff: false,
+      },
+    });
+
+    const state = await runPiAndCaptureState({ env });
+
+    expect(state.loadedExtensions.some((entry) => entry.path.includes("extensions/my-stuff/web-research.ts"))).toBe(true);
+    expect(state.effective.featureFlags.myStuff).toBe(false);
+    expect(state.tools).not.toContain("web_research");
+  });
 });

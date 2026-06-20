@@ -3,6 +3,7 @@ import { Text } from "@earendil-works/pi-tui";
 import { Type } from "typebox";
 import { expandSkill, findSkill, getSkillCommands, type SkillSummary } from "./lib/skill-execution.js";
 import { generateSkillPromptShims } from "./lib/skill-prompt-shims.js";
+import { isManagedExtensionEnabled } from "../my-stuff/lib/bundle-config.js";
 
 const skillToolSchema = Type.Object({
   name: Type.String({ description: "Name of the skill to execute/load." }),
@@ -118,6 +119,8 @@ async function executeSkillByName(name: string, argsText: string | undefined, ct
 }
 
 export default function skillToolExtension(pi: ExtensionAPI) {
+  if (!isManagedExtensionEnabled("skill-tool", "ccLike")) return;
+
   pi.on("resources_discover", async (event) => {
     const shimDir = generateSkillPromptShims(event.cwd);
     if (!shimDir) return;

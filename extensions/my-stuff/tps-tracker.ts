@@ -6,8 +6,11 @@
  */
 
 import type { ExtensionAPI } from "@earendil-works/pi-coding-agent";
+import { isManagedExtensionEnabled } from "./lib/bundle-config.js";
 
 export default function (pi: ExtensionAPI) {
+  if (!isManagedExtensionEnabled("tps-tracker", "myStuff")) return;
+
   let messageStart: number | null = null;
   let streamStart: number | null = null;
   let estimatedStreamedTokens = 0;

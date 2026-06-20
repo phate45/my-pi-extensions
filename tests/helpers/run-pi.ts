@@ -11,6 +11,8 @@ export type CapturedExtensionState = {
   }>;
   bundleConfig: unknown;
   configSources: string[];
+  commands: string[];
+  tools: string[];
   effective: {
     featureFlags: Record<string, boolean>;
     extensions: Record<string, boolean>;

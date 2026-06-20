@@ -5,10 +5,14 @@ type EventName = Parameters<ExtensionAPI["on"]>[0];
 export type MockExtensionAPI = {
   pi: ExtensionAPI;
   handlers: Map<string, Function[]>;
+  tools: unknown[];
+  commands: string[];
 };
 
 export function createMockExtensionAPI(): MockExtensionAPI {
   const handlers = new Map<string, Function[]>();
+  const tools: unknown[] = [];
+  const commands: string[] = [];
 
   const pi: Partial<ExtensionAPI> = {
     on(event: EventName, handler: Function) {
@@ -16,8 +20,12 @@ export function createMockExtensionAPI(): MockExtensionAPI {
       list.push(handler);
       handlers.set(event, list);
     },
-    registerTool() {},
-    registerCommand() {},
+    registerTool(tool) {
+      tools.push(tool);
+    },
+    registerCommand(name) {
+      commands.push(name);
+    },
     registerShortcut() {},
     registerFlag() {},
     getFlag() { return undefined; },
@@ -42,5 +50,7 @@ export function createMockExtensionAPI(): MockExtensionAPI {
   return {
     pi: pi as ExtensionAPI,
     handlers,
+    tools,
+    commands,
   };
 }

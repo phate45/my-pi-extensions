@@ -1,4 +1,5 @@
 import type { ExtensionAPI } from "@earendil-works/pi-coding-agent";
+import { isManagedExtensionEnabled } from "./lib/bundle-config.js";
 
 const YEET_PROMPT = `Commit and push the current repository changes.
 
@@ -17,6 +18,8 @@ Steps:
 Keep the commit message concise.`;
 
 export default function (pi: ExtensionAPI) {
+  if (!isManagedExtensionEnabled("yeet", "myStuff")) return;
+
   pi.registerCommand("yeet", {
     description: "Add, commit, and push the current repo changes",
     handler: async (args, ctx) => {

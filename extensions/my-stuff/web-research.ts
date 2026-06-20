@@ -4,6 +4,7 @@ import { mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import { spawn } from "node:child_process";
+import { isManagedExtensionEnabled } from "./lib/bundle-config.js";
 
 const DEFAULT_DEPTH = "fast" as const;
 const DEFAULT_FRESHNESS = "cached" as const;
@@ -212,6 +213,8 @@ function spawnAndCollect(
 }
 
 export default function webResearchExtension(pi: ExtensionAPI) {
+  if (!isManagedExtensionEnabled("web-research", "myStuff")) return;
+
   pi.registerTool({
     name: "web_research",
     label: "Web Research",

@@ -9,6 +9,7 @@ import {
   splitFrontmatter,
 } from "./lib/markdown-preprocess.js";
 import { maybeRealpath } from "./lib/cc-context.js";
+import { isManagedExtensionEnabled } from "../my-stuff/lib/bundle-config.js";
 
 function stripFrontmatter(raw: string): string {
   const { body } = splitFrontmatter(raw);
@@ -122,6 +123,8 @@ async function expandPromptTemplate(
 }
 
 export default function claudeMarkdownPreprocessor(pi: ExtensionAPI) {
+  if (!isManagedExtensionEnabled("cc-markdown-preprocessor", "ccLike")) return;
+
   pi.on("input", async (event, ctx) => {
     const parsed = parseCommandLine(event.text);
     if (!parsed) return { action: "continue" as const };

@@ -24,6 +24,7 @@ type BundleConfigState = {
   sources: string[];
   errors: string[];
   initialized: boolean;
+  preloadOnly: boolean;
 };
 
 type BundleConfigGlobal = typeof globalThis & {
@@ -47,9 +48,54 @@ function getState(): BundleConfigState {
       sources: [],
       errors: [],
       initialized: false,
+      preloadOnly: false,
     };
   }
+  if (!globalState.__myPiBundleConfigState.initialized) {
+    globalState.__myPiBundleConfigState = preloadBundleConfigFromProcess();
+  }
   return globalState.__myPiBundleConfigState;
+}
+
+function getOverridePathFromArgv(argv: string[]): string | undefined {
+  for (let index = 0; index < argv.length; index++) {
+    const arg = argv[index];
+    if (!arg) continue;
+    if (arg === "--my-pi-settings") return argv[index + 1];
+    if (arg.startsWith("--my-pi-settings=")) return arg.slice("--my-pi-settings=".length);
+  }
+  return undefined;
+}
+
+function preloadBundleConfigFromProcess(): BundleConfigState {
+  const errors: string[] = [];
+  const sources: string[] = [];
+  let settings = createDefaultSettings();
+
+  const overridePath = getOverridePathFromArgv(process.argv.slice(2));
+  if (overridePath) {
+    const overrideFile = resolveOverridePath(overridePath, process.cwd());
+    const overrideSettings = loadSettingsFromPath(overrideFile, errors);
+    if (overrideSettings) {
+      settings = deepMerge(settings, overrideSettings);
+      sources.push(overrideFile);
+    }
+  } else {
+    const globalFile = path.join(getAgentDir(), "my-pi-settings.json");
+    const globalSettings = loadSettingsFromPath(globalFile, errors);
+    if (globalSettings) {
+      settings = deepMerge(settings, globalSettings);
+      sources.push(globalFile);
+    }
+  }
+
+  return {
+    settings,
+    sources,
+    errors,
+    initialized: true,
+    preloadOnly: true,
+  };
 }
 
 function isPlainObject(value: unknown): value is Record<string, unknown> {
@@ -148,6 +194,7 @@ export function refreshBundleConfig(options: RefreshOptions) {
   state.sources = sources;
   state.errors = errors;
   state.initialized = true;
+  state.preloadOnly = false;
 
   return state;
 }
@@ -184,6 +231,10 @@ export function isExtensionEnabled(name: string) {
   return state.settings.extensions?.[name]?.enabled ?? true;
 }
 
+export function isManagedExtensionEnabled(name: string, featureFlag?: string) {
+  return (featureFlag ? isFeatureFlagEnabled(featureFlag) : true) && isExtensionEnabled(name);
+}
+
 export function getExtConfig<T = Record<string, unknown>>(name: string) {
   const state = getState();
   return state.settings.extensions?.[name]?.config as T | undefined;
@@ -195,6 +246,7 @@ export function resetBundleConfigForTests() {
     sources: [],
     errors: [],
     initialized: false,
+    preloadOnly: false,
   };
 }
 
@@ -204,5 +256,6 @@ export function setBundleConfigForTests(settings: BundleSettings) {
     sources: [],
     errors: [],
     initialized: true,
+    preloadOnly: false,
   };
 }
