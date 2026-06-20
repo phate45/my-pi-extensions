@@ -31,3 +31,15 @@ typecheck-context-stack:
       extensions/cc-like/00-system-prompt-markdown-preprocessor.ts \
       extensions/cc-like/10-cc-context-local-files.ts \
       extensions/cc-like/cc-markdown-preprocessor.ts
+
+# Run all tests.
+test:
+    bun test
+
+# Run unit tests only.
+test-unit:
+    bun test tests/unit
+
+# Run integration tests only.
+test-integration:
+    bun test tests/integration
