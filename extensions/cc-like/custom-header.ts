@@ -3,7 +3,7 @@ import type { ExtensionAPI, ExtensionContext, Theme } from "@earendil-works/pi-c
 import { visibleWidth, wrapTextWithAnsi } from "@earendil-works/pi-tui";
 import { buildStartupSummary, wrapCompactList, type StartupSummary } from "./lib/startup-summary.js";
 import { onResourcesExtended, getResourcePatchStatus } from "./lib/runtime-resource-events.js";
-import { isManagedExtensionEnabled } from "../my-stuff/lib/bundle-config.js";
+import { isManagedExtensionEnabled } from "../infra/lib/bundle-config.js";
 
 const RESET = "\x1b[0m";
 const BOLD = "\x1b[1m";

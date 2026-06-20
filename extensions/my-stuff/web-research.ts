@@ -1,13 +1,10 @@
-import type { ExtensionAPI } from "@earendil-works/pi-coding-agent";
 import { Type } from "typebox";
 import { mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import { spawn } from "node:child_process";
-import { isManagedExtensionEnabled } from "./lib/bundle-config.js";
-
-const DEFAULT_DEPTH = "fast" as const;
-const DEFAULT_FRESHNESS = "cached" as const;
+import { defineManagedExtension } from "../infra/lib/managed-extension.js";
+import { getWebResearchConfig, type WebResearchDepth, type WebResearchFreshness } from "./lib/web-research-config.js";
 
 const DEPTH_MODEL = {
   fast: "gpt-5.4-mini",
@@ -71,8 +68,8 @@ const toolSchema = Type.Object({
   ),
 });
 
-type Depth = keyof typeof DEPTH_MODEL;
-type Freshness = "cached" | "live";
+type Depth = WebResearchDepth;
+type Freshness = WebResearchFreshness;
 
 type ToolParams = {
   query: string;
@@ -212,48 +209,51 @@ function spawnAndCollect(
   });
 }
 
-export default function webResearchExtension(pi: ExtensionAPI) {
-  if (!isManagedExtensionEnabled("web-research", "myStuff")) return;
+export default defineManagedExtension({
+  name: "web-research",
+  featureFlag: "myStuff",
+  getConfig: getWebResearchConfig,
+  setup(pi, config) {
+    pi.registerTool({
+      name: "web_research",
+      label: "Web Research",
+      description: "Run web research through Codex CLI and return raw structured JSON.",
+      promptSnippet: "Research current or external information on the web and return raw structured JSON.",
+      promptGuidelines: [
+        "Use web_research when the task depends on external or current information that is not reliably available from the local repository.",
+        "Use web_research with only the query when fast cached research is sufficient; that is the default.",
+        "Use web_research with depth=\"deep\" when the task needs broader comparison, migration context, or conflicting-source analysis.",
+        "Use web_research with freshness=\"live\" when latest versions, releases, advisories, incidents, or other freshness-sensitive facts matter.",
+      ],
+      parameters: toolSchema,
 
-  pi.registerTool({
-    name: "web_research",
-    label: "Web Research",
-    description: "Run web research through Codex CLI and return raw structured JSON.",
-    promptSnippet: "Research current or external information on the web and return raw structured JSON.",
-    promptGuidelines: [
-      "Use web_research when the task depends on external or current information that is not reliably available from the local repository.",
-      "Use web_research with only the query when fast cached research is sufficient; that is the default.",
-      "Use web_research with depth=\"deep\" when the task needs broader comparison, migration context, or conflicting-source analysis.",
-      "Use web_research with freshness=\"live\" when latest versions, releases, advisories, incidents, or other freshness-sensitive facts matter.",
-    ],
-    parameters: toolSchema,
+      async execute(_toolCallId, params: ToolParams, signal, onUpdate) {
+        const depth = params.depth ?? config.defaultDepth;
+        const freshness = params.freshness ?? config.defaultFreshness;
+        const model = DEPTH_MODEL[depth];
+        const prompt = depth === "deep" ? buildDeepPrompt(params.query, freshness) : buildFastPrompt(params.query, freshness);
 
-    async execute(_toolCallId, params: ToolParams, signal, onUpdate) {
-      const depth = params.depth ?? DEFAULT_DEPTH;
-      const freshness = params.freshness ?? DEFAULT_FRESHNESS;
-      const model = DEPTH_MODEL[depth];
-      const prompt = depth === "deep" ? buildDeepPrompt(params.query, freshness) : buildFastPrompt(params.query, freshness);
+        onUpdate?.({
+          content: [
+            {
+              type: "text",
+              text: `Running Codex web research (${depth}, ${freshness}, ${model})...`,
+            },
+          ],
+          details: {},
+        });
 
-      onUpdate?.({
-        content: [
-          {
-            type: "text",
-            text: `Running Codex web research (${depth}, ${freshness}, ${model})...`,
+        const { raw } = await runCodex(prompt, model, freshness, signal);
+
+        return {
+          content: [{ type: "text", text: raw.trim() }],
+          details: {
+            depth,
+            freshness,
+            model,
           },
-        ],
-        details: {},
-      });
-
-      const { raw } = await runCodex(prompt, model, freshness, signal);
-
-      return {
-        content: [{ type: "text", text: raw.trim() }],
-        details: {
-          depth,
-          freshness,
-          model,
-        },
-      };
-    },
-  });
-}
+        };
+      },
+    });
+  },
+});

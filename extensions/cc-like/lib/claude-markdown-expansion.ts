@@ -10,7 +10,7 @@ import {
 import {
   getClaudeMarkdownExpansionConfig,
   isClaudeMarkdownInterpolationDisabled,
-} from "../../my-stuff/lib/bundle-config.js";
+} from "../../infra/lib/bundle-config.js";
 
 export type CommandRenderMode = "stdout-on-success-xml-on-error" | "xml-always";
 export type FileRenderMode = "xml" | "inline";

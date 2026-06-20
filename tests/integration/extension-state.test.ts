@@ -27,7 +27,7 @@ describe("extension state integration", () => {
     const state = await runPiAndCaptureState({ env });
     const loadedPaths = state.loadedExtensions.map((entry) => entry.path);
 
-    expect(loadedPaths.some((entry) => entry.includes("extensions/my-stuff/00-bundle-config.ts"))).toBe(true);
+    expect(loadedPaths.some((entry) => entry.includes("extensions/infra/00-bundle-config.ts"))).toBe(true);
     expect(loadedPaths.some((entry) => entry.includes("extensions/cc-like/custom-header.ts"))).toBe(true);
     expect(loadedPaths.some((entry) => entry.includes("extensions/my-stuff/web-research.ts"))).toBe(true);
 

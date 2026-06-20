@@ -3,7 +3,7 @@ import path from "node:path";
 import type { ImageContent } from "@earendil-works/pi-ai";
 import { createReadToolDefinition, getMarkdownTheme, type ExtensionAPI } from "@earendil-works/pi-coding-agent";
 import { Markdown } from "@earendil-works/pi-tui";
-import { isManagedExtensionEnabled } from "../my-stuff/lib/bundle-config.js";
+import { isManagedExtensionEnabled } from "../infra/lib/bundle-config.js";
 
 type FileRef = {
   path: string;

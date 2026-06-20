@@ -1,5 +1,5 @@
 import type { ExtensionAPI } from "@earendil-works/pi-coding-agent";
-import { isManagedExtensionEnabled } from "./lib/bundle-config.js";
+import { isManagedExtensionEnabled } from "../infra/lib/bundle-config.js";
 
 const messages = [
   // Short

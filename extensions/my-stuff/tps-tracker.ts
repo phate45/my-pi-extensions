@@ -6,7 +6,7 @@
  */
 
 import type { ExtensionAPI } from "@earendil-works/pi-coding-agent";
-import { isManagedExtensionEnabled } from "./lib/bundle-config.js";
+import { isManagedExtensionEnabled } from "../infra/lib/bundle-config.js";
 
 export default function (pi: ExtensionAPI) {
   if (!isManagedExtensionEnabled("tps-tracker", "myStuff")) return;

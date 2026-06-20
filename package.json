@@ -5,6 +5,7 @@
   "keywords": ["pi-package", "pi-extension"],
   "pi": {
     "extensions": [
+      "./extensions/infra/*.ts",
       "./extensions/cc-like/*.ts",
       "./extensions/my-stuff/*.ts"
     ],

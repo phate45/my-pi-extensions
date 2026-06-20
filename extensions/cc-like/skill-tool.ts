@@ -3,7 +3,7 @@ import { Text } from "@earendil-works/pi-tui";
 import { Type } from "typebox";
 import { expandSkill, findSkill, getSkillCommands, type SkillSummary } from "./lib/skill-execution.js";
 import { generateSkillPromptShims } from "./lib/skill-prompt-shims.js";
-import { isManagedExtensionEnabled } from "../my-stuff/lib/bundle-config.js";
+import { isManagedExtensionEnabled } from "../infra/lib/bundle-config.js";
 
 const skillToolSchema = Type.Object({
   name: Type.String({ description: "Name of the skill to execute/load." }),

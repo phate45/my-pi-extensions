@@ -14,7 +14,7 @@ import {
   refreshBundleConfig,
   resetBundleConfigForTests,
   takeBundleConfigErrors,
-} from "../../extensions/my-stuff/lib/bundle-config.js";
+} from "../../extensions/infra/lib/bundle-config.js";
 
 const tempDirs: string[] = [];
 const originalAgentDir = process.env.PI_CODING_AGENT_DIR;

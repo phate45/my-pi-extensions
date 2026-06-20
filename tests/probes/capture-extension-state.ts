@@ -6,7 +6,7 @@ import {
   isExtensionEnabled,
   isFeatureFlagEnabled,
   takeBundleConfigErrors,
-} from "../../extensions/my-stuff/lib/bundle-config.js";
+} from "../../extensions/infra/lib/bundle-config.js";
 import { getLoadedExtensionsSnapshot } from "../../extensions/cc-like/lib/runtime-loaded-extensions.js";
 
 const CHECKS = {

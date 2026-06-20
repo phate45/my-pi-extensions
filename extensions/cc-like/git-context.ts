@@ -1,5 +1,5 @@
 import type { ExtensionAPI, ExtensionContext } from "@earendil-works/pi-coding-agent";
-import { isManagedExtensionEnabled } from "../my-stuff/lib/bundle-config.js";
+import { defineManagedExtension } from "../infra/lib/managed-extension.js";
 
 type GitCounts = {
   staged: number;
@@ -81,17 +81,19 @@ async function buildGitContext(pi: ExtensionAPI, ctx: ExtensionContext): Promise
   return renderGitContext(branch, log.code === 0 ? log.stdout : "", countStatus(status.code === 0 ? status.stdout : ""));
 }
 
-export default function gitContextExtension(pi: ExtensionAPI) {
-  if (!isManagedExtensionEnabled("git-context", "ccLike")) return;
+export default defineManagedExtension({
+  name: "git-context",
+  featureFlag: "ccLike",
+  setup(pi) {
+    let gitContext = "";
 
-  let gitContext = "";
+    pi.on("session_start", async (_event, ctx) => {
+      gitContext = await buildGitContext(pi, ctx);
+    });
 
-  pi.on("session_start", async (_event, ctx) => {
-    gitContext = await buildGitContext(pi, ctx);
-  });
-
-  pi.on("before_agent_start", async (event) => {
-    if (!gitContext) return;
-    return { systemPrompt: insertBeforeCurrentDate(event.systemPrompt, gitContext) };
-  });
-}
+    pi.on("before_agent_start", async (event) => {
+      if (!gitContext) return;
+      return { systemPrompt: insertBeforeCurrentDate(event.systemPrompt, gitContext) };
+    });
+  },
+});

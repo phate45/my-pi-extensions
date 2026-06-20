@@ -8,7 +8,7 @@ import {
   splitFrontmatter,
 } from "./lib/markdown-preprocess.js";
 import { maybeRealpath } from "./lib/cc-context.js";
-import { isManagedExtensionEnabled } from "../my-stuff/lib/bundle-config.js";
+import { isManagedExtensionEnabled } from "../infra/lib/bundle-config.js";
 
 function stripFrontmatter(raw: string): string {
   const { body } = splitFrontmatter(raw);

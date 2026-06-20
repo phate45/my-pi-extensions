@@ -4,7 +4,7 @@ import os from "node:os";
 import path from "node:path";
 import type { ExtensionAPI, ExtensionContext } from "@earendil-works/pi-coding-agent";
 import { expandClaudeMarkdownResource } from "../../extensions/cc-like/lib/claude-markdown-expansion.js";
-import { resetBundleConfigForTests, setBundleConfigForTests } from "../../extensions/my-stuff/lib/bundle-config.js";
+import { resetBundleConfigForTests, setBundleConfigForTests } from "../../extensions/infra/lib/bundle-config.js";
 
 const tempDirs: string[] = [];
 

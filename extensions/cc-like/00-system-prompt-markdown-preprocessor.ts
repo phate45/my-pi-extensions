@@ -4,7 +4,7 @@ import {
   discoverSystemPromptPath,
   preprocessSystemPromptTemplate,
 } from "./lib/cc-context.js";
-import { isManagedExtensionEnabled } from "../my-stuff/lib/bundle-config.js";
+import { isManagedExtensionEnabled } from "../infra/lib/bundle-config.js";
 
 export default function systemPromptMarkdownPreprocessorExtension(pi: ExtensionAPI) {
   if (!isManagedExtensionEnabled("system-prompt-markdown-preprocessor", "ccLike")) return;
