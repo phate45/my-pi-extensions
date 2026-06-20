@@ -197,3 +197,12 @@ export function resetBundleConfigForTests() {
     initialized: false,
   };
 }
+
+export function setBundleConfigForTests(settings: BundleSettings) {
+  globalState.__myPiBundleConfigState = {
+    settings: deepMerge(createDefaultSettings(), settings),
+    sources: [],
+    errors: [],
+    initialized: true,
+  };
+}

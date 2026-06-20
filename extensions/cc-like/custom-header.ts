@@ -3,6 +3,7 @@ import type { ExtensionAPI, ExtensionContext, Theme } from "@earendil-works/pi-c
 import { visibleWidth, wrapTextWithAnsi } from "@earendil-works/pi-tui";
 import { buildStartupSummary, wrapCompactList, type StartupSummary } from "./lib/startup-summary.js";
 import { onResourcesExtended, getResourcePatchStatus } from "./lib/runtime-resource-events.js";
+import { isExtensionEnabled } from "../my-stuff/lib/bundle-config.js";
 
 const RESET = "\x1b[0m";
 const BOLD = "\x1b[1m";
@@ -97,6 +98,8 @@ function renderHeader(width: number, subtitleText: string, theme: Theme, summary
 }
 
 export default function (pi: ExtensionAPI) {
+  if (!isExtensionEnabled("custom-header")) return;
+
   let requestRender: (() => void) | undefined;
   let currentModelId = "no model selected";
   let startupSummary: StartupSummary | null = null;
