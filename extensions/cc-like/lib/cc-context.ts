@@ -15,7 +15,9 @@ export type ContextFile = {
 
 const STOCK_BASENAMES = ["AGENTS.md", "CLAUDE.md"] as const;
 const EXTENDED_FAMILIES = ["AGENTS", "CLAUDE"] as const;
-const CONTEXT_SECTION_HEADER = "\n\n# Project Context\n\nProject-specific instructions and guidelines:\n\n";
+const CONTEXT_SECTION_HEADER = "\n\n<project_context>\n\nProject-specific instructions and guidelines:\n\n";
+const CONTEXT_SECTION_FOOTER = "</project_context>\n";
+const LEGACY_CONTEXT_SECTION_HEADER = "\n\n# Project Context\n\nProject-specific instructions and guidelines:\n\n";
 const SKILLS_SECTION_HEADER = "\n\nThe following skills provide specialized instructions for specific tasks.";
 const DATE_HEADER = "\nCurrent date: ";
 
@@ -179,6 +181,16 @@ export function renderProjectContextBlock(files: ContextFile[]): string {
   if (files.length === 0) return "";
   let out = CONTEXT_SECTION_HEADER;
   for (const file of files) {
+    out += `<project_instructions path="${file.path}">\n${file.content}\n</project_instructions>\n\n`;
+  }
+  out += CONTEXT_SECTION_FOOTER;
+  return out;
+}
+
+function renderLegacyProjectContextBlock(files: ContextFile[]): string {
+  if (files.length === 0) return "";
+  let out = LEGACY_CONTEXT_SECTION_HEADER;
+  for (const file of files) {
     out += `## ${file.path}\n\n${file.content}\n\n`;
   }
   return out;
@@ -201,16 +213,19 @@ function insertContextBlock(systemPrompt: string, block: string): string {
 }
 
 export function replaceProjectContextBlock(systemPrompt: string, stockFiles: ContextFile[], replacementFiles: ContextFile[]): string {
-  const stockBlock = renderProjectContextBlock(stockFiles);
   const replacementBlock = renderProjectContextBlock(replacementFiles);
+  if (!replacementBlock) return systemPrompt;
+
+  const taggedContextPattern = /\n\n<project_context>\n\nProject-specific instructions and guidelines:\n\n[\s\S]*?<\/project_context>\n?/u;
+  if (taggedContextPattern.test(systemPrompt)) {
+    return systemPrompt.replace(taggedContextPattern, replacementBlock);
+  }
+
+  const stockBlock = renderLegacyProjectContextBlock(stockFiles);
 
   if (stockBlock && systemPrompt.includes(stockBlock)) {
     return systemPrompt.replace(stockBlock, replacementBlock);
   }
 
-  if (!stockBlock && replacementBlock) {
-    return insertContextBlock(systemPrompt, replacementBlock);
-  }
-
-  return systemPrompt;
+  return insertContextBlock(systemPrompt, replacementBlock);
 }
