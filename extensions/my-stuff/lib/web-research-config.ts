@@ -1,4 +1,4 @@
-import { getExtConfig } from "../../infra/lib/bundle-config.js";
+import { defineExtensionConfig } from "../../infra/lib/extension-config.js";
 
 export type WebResearchDepth = "fast" | "deep";
 export type WebResearchFreshness = "cached" | "live";
@@ -15,14 +15,15 @@ export const DEFAULT_WEB_RESEARCH_CONFIG: WebResearchConfig = {
 
 export function normalizeWebResearchConfig(
   raw: Record<string, unknown> | undefined,
+  defaults: WebResearchConfig = DEFAULT_WEB_RESEARCH_CONFIG,
 ): WebResearchConfig {
   return {
-    defaultDepth: raw?.defaultDepth === "deep" ? "deep" : DEFAULT_WEB_RESEARCH_CONFIG.defaultDepth,
-    defaultFreshness:
-      raw?.defaultFreshness === "live" ? "live" : DEFAULT_WEB_RESEARCH_CONFIG.defaultFreshness,
+    defaultDepth: raw?.defaultDepth === "deep" ? "deep" : defaults.defaultDepth,
+    defaultFreshness: raw?.defaultFreshness === "live" ? "live" : defaults.defaultFreshness,
   };
 }
 
-export function getWebResearchConfig() {
-  return normalizeWebResearchConfig(getExtConfig<Record<string, unknown>>("web-research"));
-}
+export const webResearchConfig = defineExtensionConfig({
+  defaults: DEFAULT_WEB_RESEARCH_CONFIG,
+  normalize: normalizeWebResearchConfig,
+});

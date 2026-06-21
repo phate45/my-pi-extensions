@@ -3,9 +3,10 @@ import {
   resetBundleConfigForTests,
   setBundleConfigForTests,
 } from "../../extensions/infra/lib/bundle-config.js";
+import { getExtensionConfig } from "../../extensions/infra/lib/extension-config.js";
 import {
   DEFAULT_FRONTMATTER_TIMESTAMPS_CONFIG,
-  getFrontmatterTimestampsConfig,
+  frontmatterTimestampsConfig,
   normalizeFrontmatterTimestampsConfig,
 } from "../../extensions/my-stuff/lib/frontmatter-timestamps-config.js";
 
@@ -15,7 +16,9 @@ afterEach(() => {
 
 describe("frontmatter-timestamps config", () => {
   test("defaults when config is absent", () => {
-    expect(getFrontmatterTimestampsConfig()).toEqual(DEFAULT_FRONTMATTER_TIMESTAMPS_CONFIG);
+    expect(getExtensionConfig("frontmatter-timestamps", frontmatterTimestampsConfig)).toEqual(
+      DEFAULT_FRONTMATTER_TIMESTAMPS_CONFIG,
+    );
   });
 
   test("reads valid config overrides", () => {
@@ -31,7 +34,7 @@ describe("frontmatter-timestamps config", () => {
       },
     });
 
-    expect(getFrontmatterTimestampsConfig()).toEqual({
+    expect(getExtensionConfig("frontmatter-timestamps", frontmatterTimestampsConfig)).toEqual({
       includePaths: ["~/Documents/second-brain", "./notes"],
       includeExtensions: [".md", ".mdx"],
       includeTimezone: true,

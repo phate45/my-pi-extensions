@@ -7,10 +7,9 @@ import {
   renderCommandStdoutOnSuccess,
   renderFileEmbed,
 } from "./markdown-preprocess.js";
-import {
-  getClaudeMarkdownExpansionConfig,
-  isClaudeMarkdownInterpolationDisabled,
-} from "../../infra/lib/bundle-config.js";
+import { isExtensionEnabled } from "../../infra/lib/bundle-config.js";
+import { getExtensionConfig } from "../../infra/lib/extension-config.js";
+import { claudeMarkdownExpansionConfig } from "./claude-markdown-expansion-config.js";
 
 export type CommandRenderMode = "stdout-on-success-xml-on-error" | "xml-always";
 export type FileRenderMode = "xml" | "inline";
@@ -63,17 +62,17 @@ export async function expandClaudeMarkdownResource(
   pi: ExtensionAPI,
   profile: ClaudeMarkdownExpansionProfile = {},
 ): Promise<string> {
-  if (isClaudeMarkdownInterpolationDisabled()) return raw;
+  if (!isExtensionEnabled("cc-markdown-preprocessor")) return raw;
 
-  const config = getClaudeMarkdownExpansionConfig();
+  const config = getExtensionConfig("cc-markdown-preprocessor", claudeMarkdownExpansionConfig);
 
   const commandRenderMode = profile.commandRenderMode ?? "stdout-on-success-xml-on-error";
   const fileRenderMode = profile.fileRenderMode ?? "xml";
 
   return preprocessMarkdown(raw, resourcePath, ctx.cwd, {
     exec: async (command: string) => execPreprocessBash(command, ctx, pi),
-    shouldExpandCommand: () => config.disableBash !== true,
-    shouldExpandFile: () => config.disableIncludes !== true,
+    shouldExpandCommand: () => !config.disableBash,
+    shouldExpandFile: () => !config.disableIncludes,
     renderCommand: (command, result) =>
       renderCommandForMode(command, result.stdout, result.stderr, result.code, commandRenderMode),
     renderFile: (ref, resolvedPath, content) => {

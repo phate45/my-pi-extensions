@@ -4,7 +4,7 @@ import { promises as fs } from "node:fs";
 import { type ExtensionAPI, withFileMutationQueue } from "@earendil-works/pi-coding-agent";
 import { defineManagedExtension } from "../infra/lib/managed-extension.js";
 import {
-  getFrontmatterTimestampsConfig,
+  frontmatterTimestampsConfig,
   type FrontmatterTimestampsConfig,
 } from "./lib/frontmatter-timestamps-config.js";
 
@@ -156,7 +156,7 @@ async function updateFrontmatterTimestamp(
 export default defineManagedExtension({
   name: "frontmatter-timestamps",
   featureFlag: "myStuff",
-  getConfig: getFrontmatterTimestampsConfig,
+  config: frontmatterTimestampsConfig,
   setup(pi: ExtensionAPI, getConfig: () => FrontmatterTimestampsConfig) {
     pi.on("tool_result", async (event, ctx) => {
       if (event.isError) return;

@@ -6,6 +6,7 @@ import type {
 import { readFileSync } from "node:fs";
 import { defineManagedExtension } from "../infra/lib/managed-extension.js";
 import { maybeRealpath } from "./lib/cc-context.js";
+import { claudeMarkdownExpansionConfig } from "./lib/claude-markdown-expansion-config.js";
 import { isClaudeResourcePath } from "./lib/claude-resource-discovery.js";
 import { expandClaudeMarkdownResource } from "./lib/claude-markdown-expansion.js";
 import { parseSlashCommandLine } from "./lib/skill-invocation.js";
@@ -64,6 +65,7 @@ async function expandPromptTemplate(
 export default defineManagedExtension({
   name: "cc-markdown-preprocessor",
   featureFlag: "ccLike",
+  config: claudeMarkdownExpansionConfig,
   setup(pi: ExtensionAPI) {
     pi.on("input", async (event, ctx) => {
       const parsed = parseSlashCommandLine(event.text);

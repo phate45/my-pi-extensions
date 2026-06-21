@@ -6,7 +6,7 @@ import { spawn } from "node:child_process";
 import { type ExtensionAPI } from "@earendil-works/pi-coding-agent";
 import { defineManagedExtension } from "../infra/lib/managed-extension.js";
 import {
-  getWebResearchConfig,
+  webResearchConfig,
   type WebResearchConfig,
   type WebResearchDepth,
   type WebResearchFreshness,
@@ -218,7 +218,7 @@ function spawnAndCollect(
 export default defineManagedExtension({
   name: "web-research",
   featureFlag: "myStuff",
-  getConfig: getWebResearchConfig,
+  config: webResearchConfig,
   setup(pi: ExtensionAPI, getConfig: () => WebResearchConfig) {
     pi.registerTool({
       name: "web_research",

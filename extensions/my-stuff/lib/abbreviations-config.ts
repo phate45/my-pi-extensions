@@ -1,4 +1,4 @@
-import { getExtConfig } from "../../infra/lib/bundle-config.js";
+import { defineExtensionConfig } from "../../infra/lib/extension-config.js";
 
 export type PlainAbbreviation = {
   kind: "plain";
@@ -77,6 +77,7 @@ export function normalizeAbbreviationsConfig(
   return { entries };
 }
 
-export function getAbbreviationsConfig() {
-  return normalizeAbbreviationsConfig(getExtConfig<Record<string, unknown>>("abbreviations"));
-}
+export const abbreviationsConfig = defineExtensionConfig({
+  defaults: DEFAULT_ABBREVIATIONS_CONFIG,
+  normalize: normalizeAbbreviationsConfig,
+});

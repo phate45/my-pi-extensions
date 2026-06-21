@@ -3,10 +3,11 @@ import {
   resetBundleConfigForTests,
   setBundleConfigForTests,
 } from "../../extensions/infra/lib/bundle-config.js";
+import { getExtensionConfig } from "../../extensions/infra/lib/extension-config.js";
 import {
   DEFAULT_WEB_RESEARCH_CONFIG,
-  getWebResearchConfig,
   normalizeWebResearchConfig,
+  webResearchConfig,
 } from "../../extensions/my-stuff/lib/web-research-config.js";
 
 afterEach(() => {
@@ -15,7 +16,9 @@ afterEach(() => {
 
 describe("web-research config", () => {
   test("defaults when config is absent", () => {
-    expect(getWebResearchConfig()).toEqual(DEFAULT_WEB_RESEARCH_CONFIG);
+    expect(getExtensionConfig("web-research", webResearchConfig)).toEqual(
+      DEFAULT_WEB_RESEARCH_CONFIG,
+    );
   });
 
   test("reads valid config overrides", () => {
@@ -30,7 +33,7 @@ describe("web-research config", () => {
       },
     });
 
-    expect(getWebResearchConfig()).toEqual({
+    expect(getExtensionConfig("web-research", webResearchConfig)).toEqual({
       defaultDepth: "deep",
       defaultFreshness: "live",
     });

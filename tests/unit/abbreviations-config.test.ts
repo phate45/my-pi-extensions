@@ -3,9 +3,10 @@ import {
   resetBundleConfigForTests,
   setBundleConfigForTests,
 } from "../../extensions/infra/lib/bundle-config.js";
+import { getExtensionConfig } from "../../extensions/infra/lib/extension-config.js";
 import {
   DEFAULT_ABBREVIATIONS_CONFIG,
-  getAbbreviationsConfig,
+  abbreviationsConfig,
   normalizeAbbreviationsConfig,
 } from "../../extensions/my-stuff/lib/abbreviations-config.js";
 
@@ -15,7 +16,9 @@ afterEach(() => {
 
 describe("abbreviations config", () => {
   test("defaults when config is absent", () => {
-    expect(getAbbreviationsConfig()).toEqual(DEFAULT_ABBREVIATIONS_CONFIG);
+    expect(getExtensionConfig("abbreviations", abbreviationsConfig)).toEqual(
+      DEFAULT_ABBREVIATIONS_CONFIG,
+    );
   });
 
   test("normalizes raw string entries for plain and bang abbreviations", () => {
@@ -69,7 +72,7 @@ describe("abbreviations config", () => {
       },
     });
 
-    expect(getAbbreviationsConfig()).toEqual({
+    expect(getExtensionConfig("abbreviations", abbreviationsConfig)).toEqual({
       entries: {
         hnd: {
           kind: "plain",

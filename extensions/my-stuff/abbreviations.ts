@@ -8,7 +8,7 @@ import {
   expandInputAbbreviations,
   hasConfiguredAbbreviations,
 } from "./lib/abbreviation-engine.js";
-import { getAbbreviationsConfig, type AbbreviationsConfig } from "./lib/abbreviations-config.js";
+import { abbreviationsConfig, type AbbreviationsConfig } from "./lib/abbreviations-config.js";
 
 class AbbreviationEditor extends CustomEditor {
   constructor(
@@ -36,13 +36,14 @@ class AbbreviationEditor extends CustomEditor {
 export default defineManagedExtension({
   name: "abbreviations",
   featureFlag: "myStuff",
-  setup(pi: ExtensionAPI) {
+  config: abbreviationsConfig,
+  setup(pi: ExtensionAPI, getConfig: () => AbbreviationsConfig) {
     if (isFeatureFlagEnabled("headless")) return;
 
     pi.on("session_start", (_event, ctx) => {
       if (ctx.mode !== "tui") return;
 
-      const config = getAbbreviationsConfig();
+      const config = getConfig();
       if (!hasConfiguredAbbreviations(config)) return;
 
       if (ctx.ui.getEditorComponent()) return;
@@ -53,7 +54,7 @@ export default defineManagedExtension({
     });
 
     registerInputTransform("abbreviations", ({ text }) => {
-      const config = getAbbreviationsConfig();
+      const config = getConfig();
       const transformed = expandInputAbbreviations(text, config);
       if (transformed === undefined) return undefined;
       return { text: transformed };

@@ -84,14 +84,14 @@ describe("claude markdown expansion", () => {
     expect(expanded).not.toContain("<file-content");
   });
 
-  test("can disable interpolation globally via bundle config", async () => {
+  test("can disable interpolation by disabling the owning extension", async () => {
     const dir = await makeTempDir();
     const resourcePath = path.join(dir, "prompt.md");
     await writeFile(resourcePath, ["before", "! ok", "@missing.txt", "after"].join("\n"));
     setBundleConfigForTests({
       extensions: {
-        "claude-markdown-expansion": {
-          config: { disabled: true },
+        "cc-markdown-preprocessor": {
+          enabled: false,
         },
       },
     });
@@ -115,7 +115,7 @@ describe("claude markdown expansion", () => {
     await writeFile(resourcePath, ["before", "! ok", "@refs/note.md", "after"].join("\n"));
     setBundleConfigForTests({
       extensions: {
-        "claude-markdown-expansion": {
+        "cc-markdown-preprocessor": {
           config: { disableBash: true },
         },
       },
@@ -141,7 +141,7 @@ describe("claude markdown expansion", () => {
     await writeFile(resourcePath, ["before", "! ok", "@refs/note.md", "after"].join("\n"));
     setBundleConfigForTests({
       extensions: {
-        "claude-markdown-expansion": {
+        "cc-markdown-preprocessor": {
           config: { disableIncludes: true },
         },
       },

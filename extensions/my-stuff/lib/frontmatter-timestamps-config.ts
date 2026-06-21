@@ -1,4 +1,4 @@
-import { getExtConfig } from "../../infra/lib/bundle-config.js";
+import { defineExtensionConfig } from "../../infra/lib/extension-config.js";
 
 export type FrontmatterTimestampsConfig = {
   includePaths: string[];
@@ -31,6 +31,7 @@ function normalizeExtensions(value: unknown) {
 
 export function normalizeFrontmatterTimestampsConfig(
   raw: Record<string, unknown> | undefined,
+  defaults: FrontmatterTimestampsConfig = DEFAULT_FRONTMATTER_TIMESTAMPS_CONFIG,
 ): FrontmatterTimestampsConfig {
   const includePaths = normalizeStringList(raw?.includePaths);
   const includeExtensions = normalizeExtensions(raw?.includeExtensions);
@@ -38,15 +39,12 @@ export function normalizeFrontmatterTimestampsConfig(
   return {
     includePaths,
     includeExtensions:
-      includeExtensions.length > 0
-        ? includeExtensions
-        : DEFAULT_FRONTMATTER_TIMESTAMPS_CONFIG.includeExtensions,
+      includeExtensions.length > 0 ? includeExtensions : defaults.includeExtensions,
     includeTimezone: raw?.includeTimezone === true,
   };
 }
 
-export function getFrontmatterTimestampsConfig() {
-  return normalizeFrontmatterTimestampsConfig(
-    getExtConfig<Record<string, unknown>>("frontmatter-timestamps"),
-  );
-}
+export const frontmatterTimestampsConfig = defineExtensionConfig({
+  defaults: DEFAULT_FRONTMATTER_TIMESTAMPS_CONFIG,
+  normalize: normalizeFrontmatterTimestampsConfig,
+});

@@ -1,6 +1,6 @@
 ---
 created: 2026-06-21T10:13:05
-modified: 2026-06-21T15:33:08
+modified: 2026-06-21T16:13:47
 ---
 
 # Architecture
@@ -42,7 +42,7 @@ Owns:
 - local tools and shell behavior
 - UI tweaks and experiments
 - personal input transforms such as abbreviations
-- feature-local typed config helpers
+- feature-local typed config definitions and normalization helpers
 
 ### `extensions/**/lib/`
 Helpers only.

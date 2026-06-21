@@ -1,6 +1,6 @@
 ---
 created: 2026-06-21T10:13:05
-modified: 2026-06-21T15:33:24
+modified: 2026-06-21T16:13:20
 ---
 
 # Bundle Config
@@ -76,6 +76,14 @@ The wrapper should stay thin:
 - optionally hand a typed config getter into `setup(...)`
 - nothing fancier
 
+Configured managed extensions now declare a runtime config definition with:
+- `defaults` for the normalized config shape
+- `normalize(raw, defaults)` for feature-local interpretation
+- optional `key` when the config key must differ from the managed extension name
+
+Infra still owns global vs local merge policy.
+The extension config definition owns only its typed slice under `extensions.<name>.config`.
+
 Important timing rule:
 - `getConfig` is a live getter, not a startup snapshot
 - global or CLI-override config is available during extension factory setup
@@ -104,8 +112,34 @@ Keep feature-specific config interpretation near the owning extension.
 
 Good pattern:
 - generic raw config in `infra`
+- shared config-definition helper in `infra/lib/extension-config.ts`
 - typed normalization in a local helper such as the web research config helper
-- entrypoint consumes normalized config, not raw blobs
+- entrypoint consumes a live typed getter, not raw blobs
+
+Example shape:
+
+```json
+{
+  "extensions": {
+    "cc-markdown-preprocessor": {
+      "enabled": true,
+      "config": {
+        "disableBash": false,
+        "disableIncludes": false
+      }
+    },
+    "web-research": {
+      "enabled": true,
+      "config": {
+        "defaultDepth": "fast",
+        "defaultFreshness": "cached"
+      }
+    }
+  }
+}
+```
+
+That means whole-feature disablement lives on `enabled`, while sub-feature knobs stay inside `config`.
 
 ## Verification
 
