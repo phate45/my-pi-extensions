@@ -1,5 +1,11 @@
-import { discoverClaudeResourceDirs } from "./claude-resource-discovery.js";
+import {
+  discoverClaudeResourceDirs,
+  type ClaudeResourceDiscoveryOptions,
+} from "./claude-resource-discovery.js";
 
-export function discoverClaudeSkillDirs(cwd: string): string[] {
-  return discoverClaudeResourceDirs(cwd, "skills");
+export function discoverClaudeSkillDirs(
+  cwd: string,
+  options?: ClaudeResourceDiscoveryOptions,
+): string[] {
+  return discoverClaudeResourceDirs(cwd, "skills", options);
 }

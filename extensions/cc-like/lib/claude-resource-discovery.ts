@@ -1,8 +1,14 @@
 import { existsSync, realpathSync } from "node:fs";
 import os from "node:os";
 import path from "node:path";
+import { resolveProjectRoot } from "./git-project-root.js";
 
 export type ClaudeResourceKind = "commands" | "skills";
+
+export type ClaudeResourceDiscoveryOptions = {
+  includeProject?: boolean;
+  includeGlobal?: boolean;
+};
 
 function maybeRealpath(dir: string): string {
   try {
@@ -12,11 +18,14 @@ function maybeRealpath(dir: string): string {
   }
 }
 
-export function collectAncestorClaudeResourceDirs(cwd: string, kind: ClaudeResourceKind): string[] {
+export function collectAncestorClaudeResourceDirs(
+  startDir: string,
+  kind: ClaudeResourceKind,
+): string[] {
   const out: string[] = [];
   const seen = new Set<string>();
 
-  let current = path.resolve(cwd);
+  let current = path.dirname(path.resolve(startDir));
   while (true) {
     const candidate = path.join(current, ".claude", kind);
     if (existsSync(candidate)) {
@@ -35,9 +44,16 @@ export function collectAncestorClaudeResourceDirs(cwd: string, kind: ClaudeResou
   return out;
 }
 
-export function discoverClaudeResourceDirs(cwd: string, kind: ClaudeResourceKind): string[] {
+export function discoverClaudeResourceDirs(
+  cwd: string,
+  kind: ClaudeResourceKind,
+  options: ClaudeResourceDiscoveryOptions = {},
+): string[] {
   const resourcePaths: string[] = [];
   const seen = new Set<string>();
+  const includeProject = options.includeProject ?? true;
+  const includeGlobal = options.includeGlobal ?? true;
+  const projectRoot = resolveProjectRoot(cwd);
 
   const addIfExists = (dir: string) => {
     if (!existsSync(dir)) return;
@@ -47,10 +63,16 @@ export function discoverClaudeResourceDirs(cwd: string, kind: ClaudeResourceKind
     resourcePaths.push(dir);
   };
 
-  for (const dir of collectAncestorClaudeResourceDirs(cwd, kind)) {
-    addIfExists(dir);
+  if (includeProject) {
+    addIfExists(path.join(projectRoot, ".claude", kind));
   }
-  addIfExists(path.join(os.homedir(), ".claude", kind));
+
+  if (includeGlobal) {
+    for (const dir of collectAncestorClaudeResourceDirs(projectRoot, kind)) {
+      addIfExists(dir);
+    }
+    addIfExists(path.join(os.homedir(), ".claude", kind));
+  }
 
   return resourcePaths;
 }

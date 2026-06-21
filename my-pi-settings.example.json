@@ -13,7 +13,14 @@
       }
     },
     "cc-context-local-files": {
-      "enabled": true
+      "enabled": true,
+      "config": {
+        "claudeFiles": {
+          "global": true,
+          "project": true,
+          "local": true
+        }
+      }
     },
     "cc-markdown-preprocessor": {
       "enabled": true,
@@ -23,7 +30,18 @@
       }
     },
     "cc-resource-paths": {
-      "enabled": true
+      "enabled": true,
+      "config": {
+        "commands": {
+          "global": true,
+          "project": true,
+          "loadInHeadless": false
+        },
+        "skills": {
+          "global": true,
+          "project": true
+        }
+      }
     },
     "context": {
       "enabled": true

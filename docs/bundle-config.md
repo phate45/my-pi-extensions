@@ -1,6 +1,6 @@
 ---
 created: 2026-06-21T10:13:05
-modified: 2026-06-21T16:30:03
+modified: 2026-06-21T21:28:21
 ---
 
 # Bundle Config
@@ -121,6 +121,30 @@ Example shape:
 ```json
 {
   "extensions": {
+    "cc-context-local-files": {
+      "enabled": true,
+      "config": {
+        "claudeFiles": {
+          "global": true,
+          "project": true,
+          "local": true
+        }
+      }
+    },
+    "cc-resource-paths": {
+      "enabled": true,
+      "config": {
+        "commands": {
+          "global": true,
+          "project": true,
+          "loadInHeadless": false
+        },
+        "skills": {
+          "global": true,
+          "project": true
+        }
+      }
+    },
     "cc-markdown-preprocessor": {
       "enabled": true,
       "config": {
@@ -140,6 +164,16 @@ Example shape:
 ```
 
 That means whole-feature disablement lives on `enabled`, while sub-feature knobs stay inside `config`.
+
+For Claude resource loading, the current knobs are:
+- `cc-context-local-files.config.claudeFiles.global` → `~/.claude/CLAUDE.md`
+- `cc-context-local-files.config.claudeFiles.project` → `<git project root>/CLAUDE.md` and falls back to `cwd` outside git
+- `cc-context-local-files.config.claudeFiles.local` → `<git project root>/CLAUDE.local.md` and falls back to `cwd` outside git
+- `cc-resource-paths.config.commands.project` → `<git project root>/.claude/commands` and falls back to `cwd` outside git
+- `cc-resource-paths.config.commands.global` → ancestor `.claude/commands` directories above the resolved project root plus `~/.claude/commands`
+- `cc-resource-paths.config.commands.loadInHeadless` → whether `.claude/commands` load in effective headless mode
+- `cc-resource-paths.config.skills.project` → `<git project root>/.claude/skills` and falls back to `cwd` outside git
+- `cc-resource-paths.config.skills.global` → ancestor `.claude/skills` directories above the resolved project root plus `~/.claude/skills`
 
 ## Example config generation
 

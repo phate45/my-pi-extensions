@@ -102,6 +102,105 @@ describe("cc-resource-paths extension", () => {
     expect(result?.skillPaths).toBeUndefined();
   });
 
+  test("respects global and project source knobs independently", async () => {
+    const root = await makeTempDir();
+    const project = path.join(root, "project");
+    const nested = path.join(project, "packages", "feature");
+    await mkdir(path.join(project, ".claude", "commands"), { recursive: true });
+    await mkdir(path.join(project, ".claude", "skills"), { recursive: true });
+    await mkdir(path.join(nested, ".claude", "commands"), { recursive: true });
+    await mkdir(path.join(nested, ".claude", "skills"), { recursive: true });
+
+    setBundleConfigForTests({
+      extensions: {
+        "cc-resource-paths": {
+          enabled: true,
+          config: {
+            commands: { global: true, project: false },
+            skills: { global: false, project: true },
+          },
+        },
+      },
+    });
+
+    const { pi, handlers } = createMockExtensionAPI();
+    ccResourcePathsExtension(pi);
+
+    const handler = handlers.get("resources_discover")?.[0];
+    const result = await handler?.({ cwd: nested });
+
+    expect(result?.promptPaths).toEqual(
+      expect.arrayContaining([path.join(project, ".claude", "commands")]),
+    );
+    expect(result?.promptPaths).not.toContain(path.join(nested, ".claude", "commands"));
+    expect(result?.skillPaths).toEqual([path.join(nested, ".claude", "skills")]);
+  });
+
+  test("suppresses Claude commands in headless mode by default", async () => {
+    const root = await makeTempDir();
+    const project = path.join(root, "project");
+    await mkdir(path.join(project, ".claude", "commands"), { recursive: true });
+    await mkdir(path.join(project, ".claude", "skills"), { recursive: true });
+
+    setBundleConfigForTests({
+      featureFlags: {
+        headless: true,
+      },
+      extensions: {
+        "cc-resource-paths": {
+          enabled: true,
+          config: {
+            skills: { global: false, project: true },
+          },
+        },
+      },
+    });
+
+    const { pi, handlers } = createMockExtensionAPI();
+    ccResourcePathsExtension(pi);
+
+    const handler = handlers.get("resources_discover")?.[0];
+    const result = await handler?.({ cwd: project });
+
+    expect(result).toEqual({
+      skillPaths: [path.join(project, ".claude", "skills")],
+    });
+    expect(result?.promptPaths).toBeUndefined();
+  });
+
+  test("allows Claude commands in headless mode when opted in", async () => {
+    const root = await makeTempDir();
+    const project = path.join(root, "project");
+    await mkdir(path.join(project, ".claude", "commands"), { recursive: true });
+    await mkdir(path.join(project, ".claude", "skills"), { recursive: true });
+
+    setBundleConfigForTests({
+      featureFlags: {
+        headless: true,
+      },
+      extensions: {
+        "cc-resource-paths": {
+          enabled: true,
+          config: {
+            commands: { global: false, project: true, loadInHeadless: true },
+            skills: { global: false, project: true },
+          },
+        },
+      },
+    });
+
+    const { pi, handlers } = createMockExtensionAPI();
+    ccResourcePathsExtension(pi);
+
+    const handler = handlers.get("resources_discover")?.[0];
+    const result = await handler?.({ cwd: project });
+
+    expect(result).toEqual({
+      promptPaths: [path.join(project, ".claude", "commands")],
+      skillPaths: [path.join(project, ".claude", "skills")],
+    });
+  });
+
   test("skips registration when disabled via bundle config", () => {
     const { pi, handlers } = createMockExtensionAPI();
     setBundleConfigForTests({

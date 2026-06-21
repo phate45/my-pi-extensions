@@ -1,20 +1,25 @@
 import { defineManagedExtension } from "../infra/lib/managed-extension.js";
 import {
-  discoverExtendedContextFiles,
+  discoverEffectiveContextFiles,
   discoverStockContextFiles,
   getAgentDir,
   maybeRealpath,
   preprocessContextMarkdown,
   replaceProjectContextBlock,
 } from "./lib/cc-context.js";
+import {
+  ccContextLocalFilesConfig,
+  type CcContextLocalFilesConfig,
+} from "./lib/claude-resource-load-config.js";
 
 export default defineManagedExtension({
   name: "cc-context-local-files",
   featureFlag: "ccLike",
-  setup(pi) {
+  config: ccContextLocalFilesConfig,
+  setup(pi, _getConfig: () => CcContextLocalFilesConfig) {
     pi.on("before_agent_start", async (event, ctx) => {
       const stockFiles = discoverStockContextFiles(ctx.cwd, getAgentDir());
-      const extendedFiles = discoverExtendedContextFiles(ctx.cwd, getAgentDir());
+      const extendedFiles = discoverEffectiveContextFiles(ctx.cwd, getAgentDir());
       if (extendedFiles.length === 0 && stockFiles.length === 0) return;
 
       const discoveredSet = new Set(

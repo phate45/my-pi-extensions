@@ -1,6 +1,6 @@
 ---
 created: 2026-06-21T10:13:05
-modified: 2026-06-21T15:33:17
+modified: 2026-06-21T21:28:12
 ---
 
 # Skill Stack
@@ -29,6 +29,14 @@ Mode interaction:
 - Pi `--no-skills|-ns` disables native skill discovery and the model-facing `skill` tool
 - in interactive runs, Claude-style human invocation still works through `skill-prompts.ts`
 - in effective headless mode, that human invocation layer stays off as well
+- bundle config can independently gate Claude resource sources:
+  - `extensions.cc-resource-paths.config.commands.{global,project,loadInHeadless}`
+  - `extensions.cc-resource-paths.config.skills.{global,project}`
+
+Source semantics for `cc-resource-paths`:
+- `project` = `<git project root>/.claude/{commands,skills}` and falls back to `cwd` outside git
+- `global` = ancestor `.claude/{commands,skills}` directories above the resolved project root plus `~/.claude/{commands,skills}`
+- `loadInHeadless` defaults to `false` for `.claude/commands`
 
 ## Invariants
 
@@ -53,6 +61,7 @@ Do not infer it from a broader command base directory.
 
 After changes, confirm:
 - `.claude/skills` discovery still works
+- disabled global/project Claude resource sources stop contributing paths
 - `.claude/commands` still load, but run through the invocation pipeline instead of inline prompt expansion
 - `.claude/commands` render as compact invocation rows in the UI instead of visible inline XML payloads
 - transformed slash input such as abbreviation-expanded `/from-handoff ...` still reaches Claude command routing

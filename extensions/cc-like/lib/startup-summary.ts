@@ -2,7 +2,7 @@ import os from "node:os";
 import path from "node:path";
 import { readFileSync } from "node:fs";
 import type { ExtensionAPI, ExtensionContext, SourceInfo } from "@earendil-works/pi-coding-agent";
-import { discoverExtendedContextFiles, getAgentDir } from "./cc-context.js";
+import { discoverEffectiveContextFiles, getAgentDir } from "./cc-context.js";
 import {
   getLoadedExtensionsPatchStatus,
   getLoadedExtensionsSnapshot,
@@ -153,7 +153,7 @@ export function listLoadedExtensions(cwd: string): string[] {
 }
 
 export function loadEffectiveContextFiles(cwd: string): EffectiveContextFile[] {
-  return discoverExtendedContextFiles(cwd, getAgentDir()).map((file) => {
+  return discoverEffectiveContextFiles(cwd, getAgentDir()).map((file) => {
     const content = readFileSync(file.path, "utf8");
     return {
       path: file.path,

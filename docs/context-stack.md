@@ -1,6 +1,6 @@
 ---
 created: 2026-06-21T10:13:05
-modified: 2026-06-21T10:13:05
+modified: 2026-06-21T21:28:07
 ---
 
 # Context Stack
@@ -14,8 +14,16 @@ The context stack makes Pi behave like Claude-style project context loading whil
 This stack owns:
 - replacing stock project context with the bundle's effective context set
 - loading `.local.md` companions alongside primary project context files
+- honoring per-source knobs for Claude context files
 - deduping discovered context resources
 - keeping startup summaries and `/context` in sync when the UI layer is active
+
+Current Claude-file knobs live under `extensions.cc-context-local-files.config.claudeFiles`:
+- `global` → `~/.claude/CLAUDE.md`
+- `project` → `<git project root>/CLAUDE.md` (falls back to `cwd` outside git)
+- `local` → `<git project root>/CLAUDE.local.md` (falls back to `cwd` outside git)
+
+Those knobs only control the Claude-family files. Existing `AGENTS*` discovery stays on the broader context path.
 
 ## Invariants
 
@@ -46,6 +54,7 @@ Change this stack when you need to:
 
 After changes, confirm:
 - `CLAUDE.local.md` content appears alongside primary project context
+- disabled Claude sources actually disappear from the effective context listing
 - effective context dedupes correctly
 - startup header context matches `/context` in UI sessions
 - prompt-visible context and effective context are describing the same reality

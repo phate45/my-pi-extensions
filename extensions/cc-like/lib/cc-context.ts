@@ -3,6 +3,11 @@ import path from "node:path";
 import { existsSync, readFileSync, realpathSync } from "node:fs";
 import type { ExtensionAPI, ExtensionContext } from "@earendil-works/pi-coding-agent";
 import { expandClaudeMarkdownResource } from "./claude-markdown-expansion.js";
+import {
+  getCcContextLocalFilesConfig,
+  type ClaudeFileSourceConfig,
+} from "./claude-resource-load-config.js";
+import { resolveProjectRoot } from "./git-project-root.js";
 
 export type ContextFile = {
   path: string;
@@ -50,6 +55,11 @@ export function isContextFilePath(filePath: string): boolean {
     base === "CLAUDE.md" ||
     base === "CLAUDE.local.md"
   );
+}
+
+export function isClaudeContextFilePath(filePath: string): boolean {
+  const base = path.basename(filePath);
+  return base === "CLAUDE.md" || base === "CLAUDE.local.md";
 }
 
 function readFileIfExists(filePath: string): ContextFile | null {
@@ -145,6 +155,42 @@ export function discoverExtendedContextFiles(cwd: string, agentDir = getAgentDir
   }
 
   files.push(...ancestors);
+  return files;
+}
+
+export function discoverConfiguredClaudeContextFiles(
+  cwd: string,
+  claudeFiles: ClaudeFileSourceConfig,
+  agentDir = getAgentDir(),
+): ContextFile[] {
+  const projectRoot = resolveProjectRoot(cwd);
+  const files: ContextFile[] = [];
+  const seen = new Set<string>();
+
+  const add = (file: ContextFile | null) => {
+    if (!file) return;
+    const resolved = maybeRealpath(file.path);
+    if (seen.has(resolved)) return;
+    seen.add(resolved);
+    files.push(file);
+  };
+
+  if (claudeFiles.global) add(readFileIfExists(path.join(agentDir, "CLAUDE.md")));
+  if (claudeFiles.project) add(readFileIfExists(path.join(projectRoot, "CLAUDE.md")));
+  if (claudeFiles.local) add(readFileIfExists(path.join(projectRoot, "CLAUDE.local.md")));
+
+  return files;
+}
+
+export function discoverEffectiveContextFiles(
+  cwd: string,
+  agentDir = getAgentDir(),
+): ContextFile[] {
+  const config = getCcContextLocalFilesConfig();
+  const files = discoverExtendedContextFiles(cwd, agentDir).filter(
+    (file) => !isClaudeContextFilePath(file.path),
+  );
+  files.push(...discoverConfiguredClaudeContextFiles(cwd, config.claudeFiles, agentDir));
   return files;
 }
 
