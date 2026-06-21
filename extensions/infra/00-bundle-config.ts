@@ -3,7 +3,8 @@ import { refreshBundleConfig, takeBundleConfigErrors } from "./lib/bundle-config
 
 export default function bundleConfigBootstrap(pi: ExtensionAPI) {
   pi.registerFlag("my-pi-settings", {
-    description: "Load my-pi-settings.json from an explicit path and ignore autodiscovered bundle config files",
+    description:
+      "Load my-pi-settings.json from an explicit path and ignore autodiscovered bundle config files",
     type: "string",
   });
 

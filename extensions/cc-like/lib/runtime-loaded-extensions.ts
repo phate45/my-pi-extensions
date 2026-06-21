@@ -35,7 +35,9 @@ export function installLoadedExtensionsPatch(): void {
 
   globalState.__piLoadedExtensionsOriginalBindCore = originalBindCore;
 
-  ExtensionRunner.prototype.bindCore = function patchedBindCore(...args: Parameters<typeof originalBindCore>) {
+  ExtensionRunner.prototype.bindCore = function patchedBindCore(
+    ...args: Parameters<typeof originalBindCore>
+  ) {
     const current = this as unknown as { extensions?: Extension[] };
     globalState.__piLoadedExtensionsSnapshot = snapshotExtensions(current.extensions ?? []);
     globalState.__piLoadedExtensionsPatchObserved = true;
@@ -49,7 +51,11 @@ export function getLoadedExtensionsSnapshot(): LoadedExtensionSnapshot[] {
   return globalState.__piLoadedExtensionsSnapshot ?? [];
 }
 
-export function getLoadedExtensionsPatchStatus(): { installed: boolean; observed: boolean; error?: string } {
+export function getLoadedExtensionsPatchStatus(): {
+  installed: boolean;
+  observed: boolean;
+  error?: string;
+} {
   return {
     installed: Boolean(globalState.__piLoadedExtensionsPatchInstalled),
     observed: Boolean(globalState.__piLoadedExtensionsPatchObserved),

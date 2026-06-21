@@ -63,7 +63,11 @@ export async function runPiAndCaptureState(options: RunPiOptions): Promise<Captu
         resolve();
         return;
       }
-      reject(new Error(`pi exited with code=${code} signal=${signal}\nstdout:\n${stdout}\nstderr:\n${stderr}`));
+      reject(
+        new Error(
+          `pi exited with code=${code} signal=${signal}\nstdout:\n${stdout}\nstderr:\n${stderr}`,
+        ),
+      );
     });
   });
 

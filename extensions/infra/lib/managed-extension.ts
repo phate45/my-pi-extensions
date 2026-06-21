@@ -14,7 +14,9 @@ export type ManagedConfiguredExtensionOptions<TConfig> = {
   setup: (pi: ExtensionAPI, config: TConfig) => unknown;
 };
 
-export function defineManagedExtension(options: ManagedExtensionOptions): (pi: ExtensionAPI) => unknown;
+export function defineManagedExtension(
+  options: ManagedExtensionOptions,
+): (pi: ExtensionAPI) => unknown;
 export function defineManagedExtension<TConfig>(
   options: ManagedConfiguredExtensionOptions<TConfig>,
 ): (pi: ExtensionAPI) => unknown;

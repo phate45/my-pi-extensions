@@ -63,7 +63,12 @@ function discoverSkillFilesFromDir(dir: string): string[] {
 }
 
 export function generateSkillPromptShims(cwd: string): string | null {
-  const shimDir = path.join("/tmp", "pi-generated", "skill-prompt-shims", normalizeProjectPath(cwd));
+  const shimDir = path.join(
+    "/tmp",
+    "pi-generated",
+    "skill-prompt-shims",
+    normalizeProjectPath(cwd),
+  );
   rmSync(shimDir, { recursive: true, force: true });
   mkdirSync(shimDir, { recursive: true });
 
@@ -87,12 +92,18 @@ export function generateSkillPromptShims(cwd: string): string | null {
       const frontmatter = [
         "---",
         `description: ${escapeYamlString(metadata.description)}`,
-        ...(metadata.argumentHint ? [`argument-hint: ${escapeYamlString(metadata.argumentHint)}`] : []),
+        ...(metadata.argumentHint
+          ? [`argument-hint: ${escapeYamlString(metadata.argumentHint)}`]
+          : []),
         "---",
         "",
       ].join("\n");
 
-      writeFileSync(path.join(shimDir, `skill:${metadata.name}.md`), `${frontmatter}${renderShimBody(metadata.name)}\n`, "utf8");
+      writeFileSync(
+        path.join(shimDir, `skill:${metadata.name}.md`),
+        `${frontmatter}${renderShimBody(metadata.name)}\n`,
+        "utf8",
+      );
       count++;
     }
   }

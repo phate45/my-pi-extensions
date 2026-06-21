@@ -1,7 +1,11 @@
 import path from "node:path";
 import type { ExtensionContext, Theme } from "@earendil-works/pi-coding-agent";
 import { visibleWidth, wrapTextWithAnsi } from "@earendil-works/pi-tui";
-import { buildStartupSummary, wrapCompactList, type StartupSummary } from "./lib/startup-summary.js";
+import {
+  buildStartupSummary,
+  wrapCompactList,
+  type StartupSummary,
+} from "./lib/startup-summary.js";
 import { onResourcesExtended, getResourcePatchStatus } from "./lib/runtime-resource-events.js";
 import { isFeatureFlagEnabled } from "../infra/lib/bundle-config.js";
 import { defineManagedExtension } from "../infra/lib/managed-extension.js";
@@ -60,7 +64,11 @@ function center(text: string, width: number) {
 }
 
 function renderSection(theme: Theme, title: string, items: string[], width: number): string[] {
-  return [theme.fg("mdHeading", `[${title}]`), ...wrapCompactList(items, width).map((line) => theme.fg("dim", line)), ""];
+  return [
+    theme.fg("mdHeading", `[${title}]`),
+    ...wrapCompactList(items, width).map((line) => theme.fg("dim", line)),
+    "",
+  ];
 }
 
 function wrapIndentedLine(line: string, width: number): string[] {
@@ -74,23 +82,38 @@ function wrapIndentedLine(line: string, width: number): string[] {
   return wrapped.map((chunk) => `${indent}${chunk}`);
 }
 
-function renderPreformattedSection(theme: Theme, title: string, lines: string[], width: number): string[] {
+function renderPreformattedSection(
+  theme: Theme,
+  title: string,
+  lines: string[],
+  width: number,
+): string[] {
   return [
     theme.fg("mdHeading", `[${title}]`),
-    ...lines.flatMap((line) => wrapIndentedLine(line, width).map((wrapped) => theme.fg("dim", wrapped))),
+    ...lines.flatMap((line) =>
+      wrapIndentedLine(line, width).map((wrapped) => theme.fg("dim", wrapped)),
+    ),
     "",
   ];
 }
 
-function renderHeader(width: number, subtitleText: string, theme: Theme, summary: StartupSummary | null) {
+function renderHeader(
+  width: number,
+  subtitleText: string,
+  theme: Theme,
+  summary: StartupSummary | null,
+) {
   const phase = 0;
-  const lines = TITLE_LINES.map((line, row) => gradientText(center(line, width), phase + row * 0.045));
+  const lines = TITLE_LINES.map((line, row) =>
+    gradientText(center(line, width), phase + row * 0.045),
+  );
   const subtitle = center(subtitleText, width);
   const out = ["", ...lines, `${BOLD}${gradientText(subtitle, phase + 0.18)}${RESET}`, ""];
 
   if (!summary) return out;
 
-  if (summary.warnings.length > 0) out.push(...renderSection(theme, "Warnings", summary.warnings, width));
+  if (summary.warnings.length > 0)
+    out.push(...renderSection(theme, "Warnings", summary.warnings, width));
   out.push(...renderSection(theme, "Context", summary.context, width));
   out.push(...renderSection(theme, "Skills", summary.skills, width));
   out.push(...renderSection(theme, "Prompts", summary.prompts, width));
@@ -112,7 +135,9 @@ export default defineManagedExtension({
     let expectResourcePatchObservation = false;
 
     function rebuildStartupSummary(ctx: ExtensionContext) {
-      startupSummary = buildStartupSummary(ctx, pi, { expectExtendedResources: expectResourcePatchObservation });
+      startupSummary = buildStartupSummary(ctx, pi, {
+        expectExtendedResources: expectResourcePatchObservation,
+      });
       requestRender?.();
     }
 

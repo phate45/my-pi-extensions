@@ -4,7 +4,10 @@ import os from "node:os";
 import path from "node:path";
 import type { ExtensionAPI, ExtensionContext } from "@earendil-works/pi-coding-agent";
 import { expandClaudeMarkdownResource } from "../../extensions/cc-like/lib/claude-markdown-expansion.js";
-import { resetBundleConfigForTests, setBundleConfigForTests } from "../../extensions/infra/lib/bundle-config.js";
+import {
+  resetBundleConfigForTests,
+  setBundleConfigForTests,
+} from "../../extensions/infra/lib/bundle-config.js";
 
 const tempDirs: string[] = [];
 
@@ -14,7 +17,9 @@ async function makeTempDir() {
   return dir;
 }
 
-function createMockPi(execImpl: (command: string) => { stdout: string; stderr: string; code: number | null }): ExtensionAPI {
+function createMockPi(
+  execImpl: (command: string) => { stdout: string; stderr: string; code: number | null },
+): ExtensionAPI {
   return {
     exec: async (_program, argv) => execImpl(String(argv[1])),
   } as unknown as ExtensionAPI;
@@ -124,7 +129,7 @@ describe("claude markdown expansion", () => {
     );
 
     expect(expanded).toContain("! ok");
-    expect(expanded).toContain("<file-content path=\"refs/note.md\"");
+    expect(expanded).toContain('<file-content path="refs/note.md"');
   });
 
   test("can disable only include interpolation", async () => {

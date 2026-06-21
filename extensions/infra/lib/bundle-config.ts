@@ -97,7 +97,9 @@ export function isHeadlessModeArgv(argv: string[]) {
 
 function isHeadlessFeatureEnabled() {
   const state = getState();
-  return state.settings.featureFlags?.headless === true || isHeadlessModeArgv(process.argv.slice(2));
+  return (
+    state.settings.featureFlags?.headless === true || isHeadlessModeArgv(process.argv.slice(2))
+  );
 }
 
 function preloadBundleConfigFromProcess(): BundleConfigState {

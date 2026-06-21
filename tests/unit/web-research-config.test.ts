@@ -1,5 +1,8 @@
 import { afterEach, describe, expect, test } from "bun:test";
-import { resetBundleConfigForTests, setBundleConfigForTests } from "../../extensions/infra/lib/bundle-config.js";
+import {
+  resetBundleConfigForTests,
+  setBundleConfigForTests,
+} from "../../extensions/infra/lib/bundle-config.js";
 import {
   DEFAULT_WEB_RESEARCH_CONFIG,
   getWebResearchConfig,

@@ -1,6 +1,9 @@
 import { afterEach, describe, expect, test } from "bun:test";
 import customHeaderExtension from "../../extensions/cc-like/custom-header.js";
-import { resetBundleConfigForTests, setBundleConfigForTests } from "../../extensions/infra/lib/bundle-config.js";
+import {
+  resetBundleConfigForTests,
+  setBundleConfigForTests,
+} from "../../extensions/infra/lib/bundle-config.js";
 import { createMockExtensionAPI } from "../helpers/mock-extension-api.js";
 
 afterEach(() => {

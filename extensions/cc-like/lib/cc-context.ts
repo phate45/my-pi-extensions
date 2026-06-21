@@ -11,10 +11,13 @@ export type ContextFile = {
 
 const STOCK_BASENAMES = ["AGENTS.md", "CLAUDE.md"] as const;
 const EXTENDED_FAMILIES = ["AGENTS", "CLAUDE"] as const;
-const CONTEXT_SECTION_HEADER = "\n\n<project_context>\n\nProject-specific instructions and guidelines:\n\n";
+const CONTEXT_SECTION_HEADER =
+  "\n\n<project_context>\n\nProject-specific instructions and guidelines:\n\n";
 const CONTEXT_SECTION_FOOTER = "</project_context>\n";
-const LEGACY_CONTEXT_SECTION_HEADER = "\n\n# Project Context\n\nProject-specific instructions and guidelines:\n\n";
-const SKILLS_SECTION_HEADER = "\n\nThe following skills provide specialized instructions for specific tasks.";
+const LEGACY_CONTEXT_SECTION_HEADER =
+  "\n\n# Project Context\n\nProject-specific instructions and guidelines:\n\n";
+const SKILLS_SECTION_HEADER =
+  "\n\nThe following skills provide specialized instructions for specific tasks.";
 const DATE_HEADER = "\nCurrent date: ";
 
 export function getAgentDir(): string {
@@ -41,7 +44,12 @@ export function maybeRealpath(filePath: string): string {
 
 export function isContextFilePath(filePath: string): boolean {
   const base = path.basename(filePath);
-  return base === "AGENTS.md" || base === "AGENTS.local.md" || base === "CLAUDE.md" || base === "CLAUDE.local.md";
+  return (
+    base === "AGENTS.md" ||
+    base === "AGENTS.local.md" ||
+    base === "CLAUDE.md" ||
+    base === "CLAUDE.local.md"
+  );
 }
 
 function readFileIfExists(filePath: string): ContextFile | null {
@@ -198,11 +206,16 @@ function insertContextBlock(systemPrompt: string, block: string): string {
   return `${systemPrompt}${block}`;
 }
 
-export function replaceProjectContextBlock(systemPrompt: string, stockFiles: ContextFile[], replacementFiles: ContextFile[]): string {
+export function replaceProjectContextBlock(
+  systemPrompt: string,
+  stockFiles: ContextFile[],
+  replacementFiles: ContextFile[],
+): string {
   const replacementBlock = renderProjectContextBlock(replacementFiles);
   if (!replacementBlock) return systemPrompt;
 
-  const taggedContextPattern = /\n\n<project_context>\n\nProject-specific instructions and guidelines:\n\n[\s\S]*?<\/project_context>\n?/u;
+  const taggedContextPattern =
+    /\n\n<project_context>\n\nProject-specific instructions and guidelines:\n\n[\s\S]*?<\/project_context>\n?/u;
   if (taggedContextPattern.test(systemPrompt)) {
     return systemPrompt.replace(taggedContextPattern, replacementBlock);
   }

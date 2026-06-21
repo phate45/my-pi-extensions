@@ -27,9 +27,15 @@ describe("extension state integration", () => {
     const state = await runPiAndCaptureState({ env });
     const loadedPaths = state.loadedExtensions.map((entry) => entry.path);
 
-    expect(loadedPaths.some((entry) => entry.includes("extensions/infra/00-bundle-config.ts"))).toBe(true);
-    expect(loadedPaths.some((entry) => entry.includes("extensions/cc-like/custom-header.ts"))).toBe(true);
-    expect(loadedPaths.some((entry) => entry.includes("extensions/my-stuff/web-research.ts"))).toBe(true);
+    expect(
+      loadedPaths.some((entry) => entry.includes("extensions/infra/00-bundle-config.ts")),
+    ).toBe(true);
+    expect(loadedPaths.some((entry) => entry.includes("extensions/cc-like/custom-header.ts"))).toBe(
+      true,
+    );
+    expect(loadedPaths.some((entry) => entry.includes("extensions/my-stuff/web-research.ts"))).toBe(
+      true,
+    );
 
     expect(state.effective.extensions["git-context"]).toBe(true);
     expect(state.effective.extensions["custom-header"]).toBe(true);
@@ -48,7 +54,9 @@ describe("extension state integration", () => {
     const state = await runPiAndCaptureState({ env });
     const loadedPaths = state.loadedExtensions.map((entry) => entry.path);
 
-    expect(loadedPaths.some((entry) => entry.includes("extensions/cc-like/git-context.ts"))).toBe(true);
+    expect(loadedPaths.some((entry) => entry.includes("extensions/cc-like/git-context.ts"))).toBe(
+      true,
+    );
     expect(state.effective.extensions["git-context"]).toBe(false);
     expect(state.configSources).toEqual([path.join(env.agentDir, "my-pi-settings.json")]);
   });
@@ -95,7 +103,11 @@ describe("extension state integration", () => {
       },
     });
 
-    const state = await runPiAndCaptureState({ env, approve: true, overrideSettingsPath: overridePath });
+    const state = await runPiAndCaptureState({
+      env,
+      approve: true,
+      overrideSettingsPath: overridePath,
+    });
 
     expect(state.effective.extensions["git-context"]).toBe(false);
     expect(state.configSources).toEqual([overridePath]);
@@ -130,7 +142,9 @@ describe("extension state integration", () => {
 
     const state = await runPiAndCaptureState({ env });
 
-    expect(state.loadedExtensions.some((entry) => entry.path.includes("extensions/cc-like/context.ts"))).toBe(true);
+    expect(
+      state.loadedExtensions.some((entry) => entry.path.includes("extensions/cc-like/context.ts")),
+    ).toBe(true);
     expect(state.effective.featureFlags.ccLike).toBe(false);
     expect(state.commands).not.toContain("context");
   });
@@ -145,7 +159,11 @@ describe("extension state integration", () => {
 
     const state = await runPiAndCaptureState({ env });
 
-    expect(state.loadedExtensions.some((entry) => entry.path.includes("extensions/my-stuff/web-research.ts"))).toBe(true);
+    expect(
+      state.loadedExtensions.some((entry) =>
+        entry.path.includes("extensions/my-stuff/web-research.ts"),
+      ),
+    ).toBe(true);
     expect(state.effective.featureFlags.myStuff).toBe(false);
     expect(state.tools).not.toContain("web_research");
   });
@@ -160,8 +178,12 @@ describe("extension state integration", () => {
 
     const state = await runPiAndCaptureState({ env });
 
-    expect(state.loadedExtensions.some((entry) => entry.path.includes("extensions/cc-like/context.ts"))).toBe(true);
-    expect(state.loadedExtensions.some((entry) => entry.path.includes("extensions/my-stuff/yeet.ts"))).toBe(true);
+    expect(
+      state.loadedExtensions.some((entry) => entry.path.includes("extensions/cc-like/context.ts")),
+    ).toBe(true);
+    expect(
+      state.loadedExtensions.some((entry) => entry.path.includes("extensions/my-stuff/yeet.ts")),
+    ).toBe(true);
     expect(state.effective.featureFlags.headless).toBe(true);
     expect(state.commands).not.toContain("context");
     expect(state.commands).not.toContain("yeet");

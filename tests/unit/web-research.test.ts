@@ -1,6 +1,9 @@
 import { afterEach, describe, expect, test } from "bun:test";
 import webResearchExtension from "../../extensions/my-stuff/web-research.js";
-import { resetBundleConfigForTests, setBundleConfigForTests } from "../../extensions/infra/lib/bundle-config.js";
+import {
+  resetBundleConfigForTests,
+  setBundleConfigForTests,
+} from "../../extensions/infra/lib/bundle-config.js";
 import { createMockExtensionAPI } from "../helpers/mock-extension-api.js";
 
 afterEach(() => {

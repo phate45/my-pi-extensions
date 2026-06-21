@@ -233,7 +233,10 @@ describe("bundle-config", () => {
     refreshBundleConfig({ cwd: projectDir, isProjectTrusted: false });
 
     expect(isClaudeMarkdownInterpolationDisabled()).toBe(false);
-    expect(getClaudeMarkdownExpansionConfig()).toEqual({ disableBash: true, disableIncludes: false });
+    expect(getClaudeMarkdownExpansionConfig()).toEqual({
+      disableBash: true,
+      disableIncludes: false,
+    });
   });
 
   test("reports invalid JSON as a non-fatal load error", async () => {

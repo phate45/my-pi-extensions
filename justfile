@@ -32,6 +32,14 @@ typecheck-context-stack:
       extensions/cc-like/10-cc-context-local-files.ts \
       extensions/cc-like/cc-markdown-preprocessor.ts
 
+# Auto-format the repo.
+lint:
+    bun x biome format . --write
+
+# Verify formatting without mutating files.
+lint-ci:
+    bun x biome ci . --linter-enabled=false --assist-enabled=false
+
 # Run all tests.
 test:
     bun test

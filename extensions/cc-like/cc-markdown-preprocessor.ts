@@ -1,4 +1,8 @@
-import type { ExtensionAPI, ExtensionContext, ToolResultEvent } from "@earendil-works/pi-coding-agent";
+import type {
+  ExtensionAPI,
+  ExtensionContext,
+  ToolResultEvent,
+} from "@earendil-works/pi-coding-agent";
 import { readFileSync } from "node:fs";
 import { expandClaudeMarkdownResource } from "./lib/claude-markdown-expansion.js";
 import { parseShellLikeArgs } from "./lib/cli-args.js";
@@ -81,12 +85,20 @@ export default function claudeMarkdownPreprocessor(pi: ExtensionAPI) {
 
     try {
       if (command.source === "prompt") {
-        const expanded = await expandPromptTemplate(command.sourceInfo.path, parsed.args, parsed.argsText, ctx, pi);
+        const expanded = await expandPromptTemplate(
+          command.sourceInfo.path,
+          parsed.args,
+          parsed.argsText,
+          ctx,
+          pi,
+        );
         return { action: "transform" as const, text: expanded, images: event.images };
       }
-
     } catch (error) {
-      ctx.ui.notify(`Claude preprocess failed: ${error instanceof Error ? error.message : String(error)}`, "warning");
+      ctx.ui.notify(
+        `Claude preprocess failed: ${error instanceof Error ? error.message : String(error)}`,
+        "warning",
+      );
     }
 
     return { action: "continue" as const };

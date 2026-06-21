@@ -11,7 +11,14 @@ import { getLoadedExtensionsSnapshot } from "../../extensions/cc-like/lib/runtim
 
 const CHECKS = {
   featureFlags: ["ccLike", "myStuff", "experimental", "contextUx", "skillTooling", "headless"],
-  extensions: ["git-context", "custom-header", "interactive-at-read", "web-research", "whimsical", "yeet"],
+  extensions: [
+    "git-context",
+    "custom-header",
+    "interactive-at-read",
+    "web-research",
+    "whimsical",
+    "yeet",
+  ],
 } as const;
 
 export default function captureExtensionState(pi: ExtensionAPI) {
@@ -26,8 +33,12 @@ export default function captureExtensionState(pi: ExtensionAPI) {
       commands: pi.getCommands().map((command) => command.name),
       tools: pi.getAllTools().map((tool) => tool.name),
       effective: {
-        featureFlags: Object.fromEntries(CHECKS.featureFlags.map((name) => [name, isFeatureFlagEnabled(name)])),
-        extensions: Object.fromEntries(CHECKS.extensions.map((name) => [name, isExtensionEnabled(name)])),
+        featureFlags: Object.fromEntries(
+          CHECKS.featureFlags.map((name) => [name, isFeatureFlagEnabled(name)]),
+        ),
+        extensions: Object.fromEntries(
+          CHECKS.extensions.map((name) => [name, isExtensionEnabled(name)]),
+        ),
       },
       errors: takeBundleConfigErrors(),
     };

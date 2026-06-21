@@ -151,7 +151,9 @@ export default defineManagedExtension({
         markerPaths.push(displayPath(ref.path, ctx.cwd));
 
         try {
-          const result = await readTool.execute("", { path: ref.path }, ctx.signal, undefined, { model: ctx.model } as never);
+          const result = await readTool.execute("", { path: ref.path }, ctx.signal, undefined, {
+            model: ctx.model,
+          } as never);
           const blocks = result.content as Array<TextBlock | ImageBlock>;
           const text = extractText(blocks);
           const images = extractImages(blocks);
@@ -163,7 +165,9 @@ export default defineManagedExtension({
           readImages.push(...images);
         } catch (error) {
           const message = error instanceof Error ? error.message : String(error);
-          readSections.push(`<read-file path="${resolvedPath}">\n[read failed: ${message}]\n</read-file>`);
+          readSections.push(
+            `<read-file path="${resolvedPath}">\n[read failed: ${message}]\n</read-file>`,
+          );
         }
       }
 
@@ -182,7 +186,9 @@ export default defineManagedExtension({
       );
 
       await pi.sendUserMessage(
-        event.images && event.images.length > 0 ? ([{ type: "text", text: event.text }, ...event.images] as const) : event.text,
+        event.images && event.images.length > 0
+          ? ([{ type: "text", text: event.text }, ...event.images] as const)
+          : event.text,
       );
 
       return { action: "handled" as const };

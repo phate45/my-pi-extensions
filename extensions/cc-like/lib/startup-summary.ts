@@ -3,7 +3,10 @@ import path from "node:path";
 import { readFileSync } from "node:fs";
 import type { ExtensionAPI, ExtensionContext, SourceInfo } from "@earendil-works/pi-coding-agent";
 import { discoverExtendedContextFiles, getAgentDir } from "./cc-context.js";
-import { getLoadedExtensionsPatchStatus, getLoadedExtensionsSnapshot } from "./runtime-loaded-extensions.js";
+import {
+  getLoadedExtensionsPatchStatus,
+  getLoadedExtensionsSnapshot,
+} from "./runtime-loaded-extensions.js";
 import { getResourcePatchStatus } from "./runtime-resource-events.js";
 
 export type StartupSummary = {
@@ -41,7 +44,8 @@ export function shortenPath(filePath: string, cwd: string, agentDir = getAgentDi
   if (isInsideCwd) return relToCwd || ".";
 
   if (resolved === resolvedAgentDir) return "~/.pi/agent";
-  if (resolved.startsWith(resolvedAgentDir + path.sep)) return `~/.pi/agent/${resolved.slice(resolvedAgentDir.length + 1)}`;
+  if (resolved.startsWith(resolvedAgentDir + path.sep))
+    return `~/.pi/agent/${resolved.slice(resolvedAgentDir.length + 1)}`;
   if (resolved === home) return "~";
   if (resolved.startsWith(home + path.sep)) return `~/${resolved.slice(home.length + 1)}`;
   return resolved;
@@ -62,18 +66,26 @@ function formatSourceHeading(source: string, rootLabel: string): string {
 }
 
 function getLocationLabel(extension: LoadedExtension, cwd: string, agentDir: string): string {
-  const baseDir = extension.sourceInfo.baseDir ? path.resolve(extension.sourceInfo.baseDir) : undefined;
+  const baseDir = extension.sourceInfo.baseDir
+    ? path.resolve(extension.sourceInfo.baseDir)
+    : undefined;
   if (baseDir) {
-    if (baseDir === agentDir || baseDir.startsWith(agentDir + path.sep)) return shortenPath(agentDir, cwd, agentDir);
-    if (baseDir === path.resolve(cwd) || baseDir.startsWith(path.resolve(cwd) + path.sep)) return shortenPath(cwd, cwd, agentDir);
+    if (baseDir === agentDir || baseDir.startsWith(agentDir + path.sep))
+      return shortenPath(agentDir, cwd, agentDir);
+    if (baseDir === path.resolve(cwd) || baseDir.startsWith(path.resolve(cwd) + path.sep))
+      return shortenPath(cwd, cwd, agentDir);
   }
 
-  const fallback = extension.sourceInfo.baseDir ? path.dirname(extension.sourceInfo.baseDir) : path.dirname(extension.path);
+  const fallback = extension.sourceInfo.baseDir
+    ? path.dirname(extension.sourceInfo.baseDir)
+    : path.dirname(extension.path);
   return shortenPath(fallback, cwd, agentDir);
 }
 
 function groupKeyForProjectLocal(extension: LoadedExtension, cwd: string): string {
-  const baseDir = extension.sourceInfo.baseDir ? path.resolve(extension.sourceInfo.baseDir) : path.resolve(cwd);
+  const baseDir = extension.sourceInfo.baseDir
+    ? path.resolve(extension.sourceInfo.baseDir)
+    : path.resolve(cwd);
   const parentDir = path.dirname(path.resolve(extension.path));
   const relativeDir = path.relative(baseDir, parentDir).replace(/\\/gu, "/");
   return relativeDir ? `${relativeDir}/` : "./";
@@ -94,15 +106,17 @@ export function listLoadedExtensions(cwd: string): string[] {
 
   for (const extension of extensions) {
     const source = extension.sourceInfo.source;
-    const rootLabel = source === "local"
-      ? shortenPath(extension.sourceInfo.baseDir ?? cwd, cwd, agentDir)
-      : getLocationLabel(extension, cwd, agentDir);
+    const rootLabel =
+      source === "local"
+        ? shortenPath(extension.sourceInfo.baseDir ?? cwd, cwd, agentDir)
+        : getLocationLabel(extension, cwd, agentDir);
     const heading = formatSourceHeading(source, rootLabel);
     sourceHeadings.set(source, heading);
 
-    const subgroup = source === "local"
-      ? `[${groupKeyForProjectLocal(extension, cwd)}]`
-      : `[${getLocationLabel(extension, cwd, agentDir)}]`;
+    const subgroup =
+      source === "local"
+        ? `[${groupKeyForProjectLocal(extension, cwd)}]`
+        : `[${getLocationLabel(extension, cwd, agentDir)}]`;
     const name = displayExtensionName(extension.path);
 
     let subgroupMap = sourceGroups.get(source);
@@ -177,13 +191,17 @@ export function buildStartupSummary(
   const resourcePatch = getResourcePatchStatus();
 
   if (extensionPatch.error) warnings.push(`[patch:loaded-extensions] ${extensionPatch.error}`);
-  else if (!extensionPatch.installed) warnings.push("[patch:loaded-extensions] patch not installed");
-  else if (!extensionPatch.observed) warnings.push("[patch:loaded-extensions] hook not observed; extension list may be stale");
+  else if (!extensionPatch.installed)
+    warnings.push("[patch:loaded-extensions] patch not installed");
+  else if (!extensionPatch.observed)
+    warnings.push("[patch:loaded-extensions] hook not observed; extension list may be stale");
 
   if (resourcePatch.error) warnings.push(`[patch:resources] ${resourcePatch.error}`);
   else if (!resourcePatch.installed) warnings.push("[patch:resources] patch not installed");
   else if (options.expectExtendedResources && !resourcePatch.observed) {
-    warnings.push("[patch:resources] hook not observed after resources_discover; skills/prompts may be stale");
+    warnings.push(
+      "[patch:resources] hook not observed after resources_discover; skills/prompts may be stale",
+    );
   }
 
   return {

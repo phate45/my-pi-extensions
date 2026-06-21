@@ -1,7 +1,12 @@
 import { keyText, type ExtensionAPI, type ExtensionContext } from "@earendil-works/pi-coding-agent";
 import { Text } from "@earendil-works/pi-tui";
 import { Type } from "typebox";
-import { expandSkill, findSkill, getSkillCommands, type SkillSummary } from "./lib/skill-execution.js";
+import {
+  expandSkill,
+  findSkill,
+  getSkillCommands,
+  type SkillSummary,
+} from "./lib/skill-execution.js";
 import { generateSkillPromptShims } from "./lib/skill-prompt-shims.js";
 import { isManagedExtensionEnabled } from "../infra/lib/bundle-config.js";
 
@@ -13,7 +18,10 @@ type SkillToolParams = {
   name: string;
 };
 
-function formatSkillToolCall(name: string, theme: { fg: (color: string, text: string) => string }): string {
+function formatSkillToolCall(
+  name: string,
+  theme: { fg: (color: string, text: string) => string },
+): string {
   return (
     theme.fg("customMessageLabel", `\x1b[1m[skill]\x1b[22m `) +
     theme.fg("customMessageText", name) +
@@ -30,12 +38,18 @@ function formatSkillToolResult(
   if (!expanded && !isError) return "";
 
   const text = result.content
-    .filter((item): item is { type: string; text: string } => item.type === "text" && typeof item.text === "string")
+    .filter(
+      (item): item is { type: string; text: string } =>
+        item.type === "text" && typeof item.text === "string",
+    )
     .map((item) => item.text)
     .join("\n");
 
   if (!text) return "";
-  return `\n${text.split("\n").map((line) => theme.fg("toolOutput", line)).join("\n")}`;
+  return `\n${text
+    .split("\n")
+    .map((line) => theme.fg("toolOutput", line))
+    .join("\n")}`;
 }
 
 function escapeXml(str: string): string {
@@ -75,7 +89,8 @@ function renderSkillPromptReplacement(skills: SkillSummary[]): string {
 }
 
 function replacePiSkillPromptBlock(systemPrompt: string, replacement: string): string {
-  const blockPattern = /\n*The following skills provide specialized instructions for specific tasks\.\nUse the read tool to load a skill's file when the task matches its description\.\nWhen a skill file references a relative path, resolve it against the skill directory \(parent of SKILL\.md \/ dirname of the path\) and use that absolute path in tool commands\.\n\n<available_skills>\n[\s\S]*?\n<\/available_skills>/;
+  const blockPattern =
+    /\n*The following skills provide specialized instructions for specific tasks\.\nUse the read tool to load a skill's file when the task matches its description\.\nWhen a skill file references a relative path, resolve it against the skill directory \(parent of SKILL\.md \/ dirname of the path\) and use that absolute path in tool commands\.\n\n<available_skills>\n[\s\S]*?\n<\/available_skills>/;
 
   if (blockPattern.test(systemPrompt)) {
     return systemPrompt.replace(blockPattern, `\n\n${replacement}`);
@@ -94,18 +109,29 @@ function replacePiSkillPromptBlock(systemPrompt: string, replacement: string): s
 function parseSkillCommand(text: string): { name: string; argsText: string } | null {
   if (!text.startsWith("/skill:")) return null;
   const spaceIndex = text.indexOf(" ");
-  const name = spaceIndex === -1 ? text.slice("/skill:".length) : text.slice("/skill:".length, spaceIndex);
+  const name =
+    spaceIndex === -1 ? text.slice("/skill:".length) : text.slice("/skill:".length, spaceIndex);
   if (!name) return null;
   const argsText = spaceIndex === -1 ? "" : text.slice(spaceIndex + 1).trim();
   return { name, argsText };
 }
 
-async function executeSkillByName(name: string, argsText: string | undefined, ctx: ExtensionContext, pi: ExtensionAPI) {
+async function executeSkillByName(
+  name: string,
+  argsText: string | undefined,
+  ctx: ExtensionContext,
+  pi: ExtensionAPI,
+) {
   const skill = findSkill(pi, name);
   if (!skill) {
-    const available = getSkillCommands(pi).map((item) => item.name).join(", ") || "none";
+    const available =
+      getSkillCommands(pi)
+        .map((item) => item.name)
+        .join(", ") || "none";
     return {
-      content: [{ type: "text" as const, text: `Skill not found: ${name}\nAvailable skills: ${available}` }],
+      content: [
+        { type: "text" as const, text: `Skill not found: ${name}\nAvailable skills: ${available}` },
+      ],
       details: { name, available },
       isError: true,
     };
@@ -142,7 +168,9 @@ export default function skillToolExtension(pi: ExtensionAPI) {
       renderCall(args, theme, context) {
         const text = (context.lastComponent as Text | undefined) ?? new Text("", 0, 0);
         const name = typeof args?.name === "string" && args.name ? args.name : "...";
-        text.setText(formatSkillToolCall(name, theme as { fg: (color: string, text: string) => string }));
+        text.setText(
+          formatSkillToolCall(name, theme as { fg: (color: string, text: string) => string }),
+        );
         return text;
       },
       renderResult(result, options, theme, context) {

@@ -13,7 +13,9 @@ export const DEFAULT_WEB_RESEARCH_CONFIG: WebResearchConfig = {
   defaultFreshness: "cached",
 };
 
-export function normalizeWebResearchConfig(raw: Record<string, unknown> | undefined): WebResearchConfig {
+export function normalizeWebResearchConfig(
+  raw: Record<string, unknown> | undefined,
+): WebResearchConfig {
   return {
     defaultDepth: raw?.defaultDepth === "deep" ? "deep" : DEFAULT_WEB_RESEARCH_CONFIG.defaultDepth,
     defaultFreshness:

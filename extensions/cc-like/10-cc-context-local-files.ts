@@ -17,11 +17,19 @@ export default function claudeContextLocalFilesExtension(pi: ExtensionAPI) {
     const extendedFiles = discoverExtendedContextFiles(ctx.cwd, getAgentDir());
     if (extendedFiles.length === 0 && stockFiles.length === 0) return;
 
-    const discoveredSet = new Set(extendedFiles.map((file: { path: string }) => maybeRealpath(file.path)));
+    const discoveredSet = new Set(
+      extendedFiles.map((file: { path: string }) => maybeRealpath(file.path)),
+    );
     const processedFiles = [];
 
     for (const file of extendedFiles) {
-      const processed = await preprocessContextMarkdown(file.content, file.path, ctx, pi, discoveredSet);
+      const processed = await preprocessContextMarkdown(
+        file.content,
+        file.path,
+        ctx,
+        pi,
+        discoveredSet,
+      );
       processedFiles.push({ path: file.path, content: processed });
     }
 

@@ -1,6 +1,9 @@
 import { afterEach, describe, expect, test } from "bun:test";
 import yeetExtension from "../../extensions/my-stuff/yeet.js";
-import { resetBundleConfigForTests, setBundleConfigForTests } from "../../extensions/infra/lib/bundle-config.js";
+import {
+  resetBundleConfigForTests,
+  setBundleConfigForTests,
+} from "../../extensions/infra/lib/bundle-config.js";
 import { createMockExtensionAPI } from "../helpers/mock-extension-api.js";
 
 afterEach(() => {

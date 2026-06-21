@@ -3,7 +3,10 @@ import { mkdtemp, mkdir, rm } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import ccResourcePathsExtension from "../../extensions/cc-like/cc-resource-paths.js";
-import { resetBundleConfigForTests, setBundleConfigForTests } from "../../extensions/infra/lib/bundle-config.js";
+import {
+  resetBundleConfigForTests,
+  setBundleConfigForTests,
+} from "../../extensions/infra/lib/bundle-config.js";
 import { createMockExtensionAPI } from "../helpers/mock-extension-api.js";
 
 const tempDirs: string[] = [];

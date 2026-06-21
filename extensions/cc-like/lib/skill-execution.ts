@@ -62,9 +62,7 @@ function parseScalar(value: string): unknown {
 }
 
 function parseFrontmatterFields(rawFrontmatter: string): Record<string, unknown> {
-  const content = rawFrontmatter
-    .replace(/^---\n/, "")
-    .replace(/\n---\n?$/, "");
+  const content = rawFrontmatter.replace(/^---\n/, "").replace(/\n---\n?$/, "");
   const fields: Record<string, unknown> = {};
   const lines = content.split("\n");
 
@@ -106,15 +104,27 @@ function stringField(fields: Record<string, unknown>, key: string): string | und
   return typeof value === "string" && value.trim() ? value.trim() : undefined;
 }
 
-function booleanField(fields: Record<string, unknown>, key: string, defaultValue: boolean): boolean {
+function booleanField(
+  fields: Record<string, unknown>,
+  key: string,
+  defaultValue: boolean,
+): boolean {
   const value = fields[key];
   return typeof value === "boolean" ? value : defaultValue;
 }
 
 function argumentNamesField(fields: Record<string, unknown>): string[] {
   const value = fields.arguments;
-  if (Array.isArray(value)) return value.map(String).map((item) => item.trim()).filter(Boolean);
-  if (typeof value === "string") return value.split(/\s+/).map((item) => item.trim()).filter(Boolean);
+  if (Array.isArray(value))
+    return value
+      .map(String)
+      .map((item) => item.trim())
+      .filter(Boolean);
+  if (typeof value === "string")
+    return value
+      .split(/\s+/)
+      .map((item) => item.trim())
+      .filter(Boolean);
   return [];
 }
 
@@ -156,7 +166,11 @@ export function readSkillDocument(skillPath: string): SkillDocument {
 
 export const parseArgs = parseShellLikeArgs;
 
-function expandSkillVariables(body: string, skill: SkillSummary, options: SkillExpansionOptions): string {
+function expandSkillVariables(
+  body: string,
+  skill: SkillSummary,
+  options: SkillExpansionOptions,
+): string {
   const skillDir = maybeRealpath(skill.baseDir);
   const argsText = options.argsText?.trim() ?? "";
   const args = parseArgs(argsText);
@@ -213,7 +227,9 @@ export async function expandSkill(
   const expandedBody = expandSkillVariables(document.body, skill, options);
   const preprocessed = await expandClaudeMarkdownResource(expandedBody, skill.path, ctx, pi, {
     transformEmbeddedFile: (resolvedPath, content) =>
-      path.basename(resolvedPath) === "SKILL.md" ? splitFrontmatter(content).body.trimStart() : content,
+      path.basename(resolvedPath) === "SKILL.md"
+        ? splitFrontmatter(content).body.trimStart()
+        : content,
   });
 
   const skillBlock = [

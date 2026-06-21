@@ -35,12 +35,23 @@ async function execPreprocessBash(command: string, ctx: ExtensionContext, pi: Ex
   return { stdout: result.stdout, stderr: result.stderr, code: result.code };
 }
 
-function renderCommandForMode(command: string, stdout: string, stderr: string, code: number | null, mode: CommandRenderMode) {
+function renderCommandForMode(
+  command: string,
+  stdout: string,
+  stderr: string,
+  code: number | null,
+  mode: CommandRenderMode,
+) {
   if (mode === "xml-always") return renderCommandOutput(command, stdout, stderr, code);
   return renderCommandStdoutOnSuccess(command, stdout, stderr, code);
 }
 
-function renderFileForMode(ref: string, resolvedPath: string, content: string, mode: FileRenderMode) {
+function renderFileForMode(
+  ref: string,
+  resolvedPath: string,
+  content: string,
+  mode: FileRenderMode,
+) {
   if (mode === "inline") return content.trimEnd();
   return renderFileEmbed(ref, maybeRealpath(resolvedPath), content);
 }

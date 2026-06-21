@@ -1,9 +1,6 @@
 import type { ExtensionAPI } from "@earendil-works/pi-coding-agent";
 import { readFileSync } from "node:fs";
-import {
-  discoverSystemPromptPath,
-  preprocessSystemPromptTemplate,
-} from "./lib/cc-context.js";
+import { discoverSystemPromptPath, preprocessSystemPromptTemplate } from "./lib/cc-context.js";
 import { isManagedExtensionEnabled } from "../infra/lib/bundle-config.js";
 
 export default function systemPromptMarkdownPreprocessorExtension(pi: ExtensionAPI) {
@@ -17,7 +14,12 @@ export default function systemPromptMarkdownPreprocessorExtension(pi: ExtensionA
     if (!event.systemPrompt.startsWith(rawPrompt)) return;
     if (!rawPrompt.includes("!") && !rawPrompt.includes("@")) return;
 
-    const processedPrompt = await preprocessSystemPromptTemplate(rawPrompt, systemPromptPath, ctx, pi);
+    const processedPrompt = await preprocessSystemPromptTemplate(
+      rawPrompt,
+      systemPromptPath,
+      ctx,
+      pi,
+    );
 
     return {
       systemPrompt: `${processedPrompt}${event.systemPrompt.slice(rawPrompt.length)}`,

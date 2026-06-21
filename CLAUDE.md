@@ -55,7 +55,9 @@ Start here when the work touches one of these stacks:
 
 After changing anything important, verify the right slice instead of relying on vibes.
 
-- use the local `justfile` recipes
+- use the local `justfile` recipes (`just test`, ...)
+- run `just lint` freely after edits; this repo uses Biome for formatting
+- use `just lint-ci` when you want a non-mutating formatting check via Biome (formatting only, no assist/lint noise)
 - reload Pi after package changes
 - use a fresh Pi session for startup and system-prompt validation
 - confirm `.claude/commands` and `.claude/skills` still load

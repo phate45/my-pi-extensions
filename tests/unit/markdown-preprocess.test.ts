@@ -1,5 +1,8 @@
 import { describe, expect, test } from "bun:test";
-import { renderCommandOutput, renderCommandStdoutOnSuccess } from "../../extensions/cc-like/lib/markdown-preprocess.js";
+import {
+  renderCommandOutput,
+  renderCommandStdoutOnSuccess,
+} from "../../extensions/cc-like/lib/markdown-preprocess.js";
 
 describe("markdown preprocess command rendering", () => {
   test("inlines stdout for successful commands", () => {

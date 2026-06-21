@@ -67,9 +67,16 @@ export function resolveEmbedPath(rawPath: string, resourceDir: string, cwd: stri
   return path.resolve(cwd, candidate);
 }
 
-export function renderCommandOutput(command: string, stdout: string, stderr: string, code: number | null): string {
+export function renderCommandOutput(
+  command: string,
+  stdout: string,
+  stderr: string,
+  code: number | null,
+): string {
   const chunks: string[] = [];
-  chunks.push(`<command-output command=${JSON.stringify(command)} exit_code=${JSON.stringify(code)}>`);
+  chunks.push(
+    `<command-output command=${JSON.stringify(command)} exit_code=${JSON.stringify(code)}>`,
+  );
   if (stdout.trim()) {
     chunks.push("<stdout>");
     chunks.push(stdout.trimEnd());
@@ -87,7 +94,12 @@ export function renderCommandOutput(command: string, stdout: string, stderr: str
   return chunks.join("\n");
 }
 
-export function renderCommandStdoutOnSuccess(command: string, stdout: string, stderr: string, code: number | null): string | null {
+export function renderCommandStdoutOnSuccess(
+  command: string,
+  stdout: string,
+  stderr: string,
+  code: number | null,
+): string | null {
   if (code === 0) {
     const trimmed = stdout.trimEnd();
     return trimmed ? trimmed : null;

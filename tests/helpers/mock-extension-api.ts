@@ -28,23 +28,39 @@ export function createMockExtensionAPI(): MockExtensionAPI {
     },
     registerShortcut() {},
     registerFlag() {},
-    getFlag() { return undefined; },
+    getFlag() {
+      return undefined;
+    },
     registerMessageRenderer() {},
     sendMessage() {},
     sendUserMessage() {},
     appendEntry() {},
     setSessionName() {},
-    getSessionName() { return undefined; },
+    getSessionName() {
+      return undefined;
+    },
     setLabel() {},
-    async exec() { return { stdout: "", stderr: "", code: 0, killed: false }; },
-    getActiveTools() { return []; },
-    getAllTools() { return []; },
+    async exec() {
+      return { stdout: "", stderr: "", code: 0, killed: false };
+    },
+    getActiveTools() {
+      return [];
+    },
+    getAllTools() {
+      return [];
+    },
     setActiveTools() {},
-    getCommands() { return []; },
-    getThemes() { return []; },
+    getCommands() {
+      return [];
+    },
+    getThemes() {
+      return [];
+    },
     registerProvider() {},
     setThinkingLevel() {},
-    getThinkingLevel() { return "medium" as const; },
+    getThinkingLevel() {
+      return "medium" as const;
+    },
   };
 
   return {

@@ -64,7 +64,10 @@ export default defineManagedExtension({
       if (elapsed <= 0 || currentTokens <= 0) return;
 
       const tps = Math.round(currentTokens / elapsed);
-      const tokenLabel = officialTokens > 0 ? `${officialTokens} tok` : `~${Math.round(estimatedStreamedTokens)} tok`;
+      const tokenLabel =
+        officialTokens > 0
+          ? `${officialTokens} tok`
+          : `~${Math.round(estimatedStreamedTokens)} tok`;
       const theme = ctx.ui.theme;
       ctx.ui.setStatus(
         "tps",
@@ -96,10 +99,14 @@ export default defineManagedExtension({
       if (!ctx.hasUI) return;
 
       const elapsed = totalStreamMs / 1000;
-      const tps = totalOutputTokens > 0 && elapsed > 0 ? Math.round(totalOutputTokens / elapsed) : 0;
+      const tps =
+        totalOutputTokens > 0 && elapsed > 0 ? Math.round(totalOutputTokens / elapsed) : 0;
       const theme = ctx.ui.theme;
       const tpsLabel = tps > 0 ? theme.fg("accent", `${tps} tok/s`) : theme.fg("dim", "N/A");
-      const detail = theme.fg("dim", `${totalOutputTokens} tokens in ${elapsed.toFixed(1)}s streaming`);
+      const detail = theme.fg(
+        "dim",
+        `${totalOutputTokens} tokens in ${elapsed.toFixed(1)}s streaming`,
+      );
 
       ctx.ui.notify(`${theme.fg("success", "✓")} ${tpsLabel}  ${detail}`, "info");
       ctx.ui.setStatus("tps", theme.fg("dim", `done — ${tps > 0 ? `${tps} tok/s` : "N/A"}`));

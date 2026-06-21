@@ -22,7 +22,9 @@ function getFishPath() {
 }
 
 function getFishInitPath() {
-  return process.env.PI_USER_BASH_FISH_INIT ?? join(homedir(), ".config", "fish", "pi-user-bash.fish");
+  return (
+    process.env.PI_USER_BASH_FISH_INIT ?? join(homedir(), ".config", "fish", "pi-user-bash.fish")
+  );
 }
 
 export default defineManagedExtension({

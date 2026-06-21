@@ -39,8 +39,5 @@
     "ask": [],
     "defaultMode": "acceptEdits"
   },
-  "enabledMcpjsonServers": [
-    "fetch",
-    "sequential-thinking"
-  ]
+  "enabledMcpjsonServers": ["fetch", "sequential-thinking"]
 }

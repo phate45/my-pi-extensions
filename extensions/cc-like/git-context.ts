@@ -13,7 +13,12 @@ type ExecResult = {
   code: number;
 };
 
-async function git(pi: ExtensionAPI, cwd: string, args: string[], signal?: AbortSignal): Promise<ExecResult> {
+async function git(
+  pi: ExtensionAPI,
+  cwd: string,
+  args: string[],
+  signal?: AbortSignal,
+): Promise<ExecResult> {
   return await pi.exec("git", ["-C", cwd, ...args], { cwd, signal });
 }
 
@@ -49,7 +54,12 @@ function renderGitContext(branch: string, commits: string, counts: GitCounts): s
     `Branch: ${branch}`,
     "",
     "Last 5 commits:",
-    ...(commits.trim() ? commits.trim().split("\n").map((line) => `- ${line}`) : ["- none"]),
+    ...(commits.trim()
+      ? commits
+          .trim()
+          .split("\n")
+          .map((line) => `- ${line}`)
+      : ["- none"]),
     "",
     `Status: ${formatCount(counts.staged, "staged")}, ${formatCount(counts.unstaged, "unstaged")}, ${formatCount(counts.untracked, "untracked")}`,
   ];
@@ -78,7 +88,11 @@ async function buildGitContext(pi: ExtensionAPI, ctx: ExtensionContext): Promise
   const log = await git(pi, ctx.cwd, ["log", "--oneline", "-5"], ctx.signal);
   const status = await git(pi, ctx.cwd, ["status", "--short"], ctx.signal);
 
-  return renderGitContext(branch, log.code === 0 ? log.stdout : "", countStatus(status.code === 0 ? status.stdout : ""));
+  return renderGitContext(
+    branch,
+    log.code === 0 ? log.stdout : "",
+    countStatus(status.code === 0 ? status.stdout : ""),
+  );
 }
 
 export default defineManagedExtension({
