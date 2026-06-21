@@ -1,5 +1,4 @@
-import type { ExtensionAPI } from "@earendil-works/pi-coding-agent";
-import { isManagedExtensionEnabled } from "../infra/lib/bundle-config.js";
+import { defineManagedExtension } from "../infra/lib/managed-extension.js";
 
 const YEET_PROMPT = `Commit and push the current repository changes.
 
@@ -17,22 +16,24 @@ Steps:
 
 Keep the commit message concise.`;
 
-export default function (pi: ExtensionAPI) {
-  if (!isManagedExtensionEnabled("yeet", "myStuff")) return;
+export default defineManagedExtension({
+  name: "yeet",
+  featureFlag: "myStuff",
+  setup(pi) {
+    pi.registerCommand("yeet", {
+      description: "Add, commit, and push the current repo changes",
+      handler: async (args, ctx) => {
+        const prompt = args?.trim()
+          ? `${YEET_PROMPT}\n\nAdditional instructions from the user:\n${args.trim()}`
+          : YEET_PROMPT;
 
-  pi.registerCommand("yeet", {
-    description: "Add, commit, and push the current repo changes",
-    handler: async (args, ctx) => {
-      const prompt = args?.trim()
-        ? `${YEET_PROMPT}\n\nAdditional instructions from the user:\n${args.trim()}`
-        : YEET_PROMPT;
-
-      if (ctx.isIdle()) {
-        pi.sendUserMessage(prompt);
-      } else {
-        pi.sendUserMessage(prompt, { deliverAs: "followUp" });
-        ctx.ui.notify("Queued /yeet as a follow-up", "info");
-      }
-    },
-  });
-}
+        if (ctx.isIdle()) {
+          pi.sendUserMessage(prompt);
+        } else {
+          pi.sendUserMessage(prompt, { deliverAs: "followUp" });
+          ctx.ui.notify("Queued /yeet as a follow-up", "info");
+        }
+      },
+    });
+  },
+});

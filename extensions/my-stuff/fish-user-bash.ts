@@ -2,8 +2,8 @@ import { basename } from "node:path";
 import { existsSync } from "node:fs";
 import { homedir } from "node:os";
 import { join } from "node:path";
-import { createLocalBashOperations, type ExtensionAPI } from "@earendil-works/pi-coding-agent";
-import { isManagedExtensionEnabled } from "../infra/lib/bundle-config.js";
+import { createLocalBashOperations } from "@earendil-works/pi-coding-agent";
+import { defineManagedExtension } from "../infra/lib/managed-extension.js";
 
 function shellQuote(value: string) {
   return `'${value.replaceAll("'", `'\\''`)}'`;
@@ -24,22 +24,24 @@ function getFishInitPath() {
   return process.env.PI_USER_BASH_FISH_INIT ?? join(homedir(), ".config", "fish", "pi-user-bash.fish");
 }
 
-export default function (pi: ExtensionAPI) {
-  if (!isManagedExtensionEnabled("fish-user-bash", "myStuff")) return;
+export default defineManagedExtension({
+  name: "fish-user-bash",
+  featureFlag: "myStuff",
+  setup(pi) {
+    const local = createLocalBashOperations();
 
-  const local = createLocalBashOperations();
-
-  pi.on("user_bash", () => {
-    return {
-      operations: {
-        exec(command, cwd, options) {
-          const fishPath = getFishPath();
-          const initPath = getFishInitPath();
-          const initCommand = existsSync(initPath) ? `source ${fishQuote(initPath)}` : "";
-          const fishCommand = `exec ${shellQuote(fishPath)} -N -C ${shellQuote(initCommand)} -c ${shellQuote(command)}`;
-          return local.exec(fishCommand, cwd, options);
+    pi.on("user_bash", () => {
+      return {
+        operations: {
+          exec(command, cwd, options) {
+            const fishPath = getFishPath();
+            const initPath = getFishInitPath();
+            const initCommand = existsSync(initPath) ? `source ${fishQuote(initPath)}` : "";
+            const fishCommand = `exec ${shellQuote(fishPath)} -N -C ${shellQuote(initCommand)} -c ${shellQuote(command)}`;
+            return local.exec(fishCommand, cwd, options);
+          },
         },
-      },
-    };
-  });
-}
+      };
+    });
+  },
+});
