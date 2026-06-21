@@ -36,10 +36,15 @@ Those controls belong to bundle config, not to per-entrypoint ad hoc flags.
 Keep prompt preprocessing prompt-focused.
 It should not execute skills, preprocess raw skill inspection, or treat generated skill shims as normal prompts.
 
+For Claude-compat resources, distinguish ordinary prompts from invocation resources:
+- ordinary Pi prompt templates still expand inline through prompt preprocessing
+- `.claude/commands` should be intercepted before inline prompt expansion and routed through the Claude invocation path instead
+
 ## Verification
 
 After changes, verify:
 - successful command output no longer sprays XML
 - failures still preserve diagnostic structure
 - file rendering mode stays correct for the owning resource type
+- `.claude/commands` do not accidentally fall back to ordinary inline prompt expansion
 - config kill switches still behave independently

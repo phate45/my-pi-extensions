@@ -53,6 +53,12 @@ Current notable feature flags:
 
 That auto-application is argv-derived, not `ctx.mode`-derived. Factory-time extension gating runs before any handler has a `ctx`, so the resolver cannot depend on runtime context that does not exist yet.
 
+Related Pi CLI switches also affect bundle behavior even though they are not bundle config keys.
+Most notably:
+- `--no-skills` / `-ns` disables native Pi skill discovery and the model-facing `skill` tool
+- this bundle still keeps Claude-style human invocation available in interactive runs via `skill-prompts.ts`
+- in effective headless mode, that human invocation layer stays off too
+
 ## Managed entrypoints
 
 Managed entrypoints use the shared wrapper from `infra`.

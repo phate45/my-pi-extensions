@@ -18,8 +18,10 @@ typecheck-skill-stack:
     just typecheck \
       extensions/cc-like/lib/cc-skill-discovery.ts \
       extensions/cc-like/lib/skill-execution.ts \
+      extensions/cc-like/lib/skill-invocation.ts \
       extensions/cc-like/lib/skill-prompt-shims.ts \
-      extensions/cc-like/cc-skill-paths.ts \
+      extensions/cc-like/cc-resource-paths.ts \
+      extensions/cc-like/skill-prompts.ts \
       extensions/cc-like/skill-tool.ts
 
 # Typecheck the cc-like context + markdown preprocessing stack.

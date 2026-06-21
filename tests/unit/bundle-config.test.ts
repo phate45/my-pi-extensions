@@ -6,6 +6,7 @@ import {
   getClaudeMarkdownExpansionConfig,
   getBundleConfigSources,
   getExtConfig,
+  isSkillsDisabledArgv,
   isHeadlessModeArgv,
   isClaudeMarkdownInterpolationDisabled,
   isBundleConfigInitialized,
@@ -175,6 +176,12 @@ describe("bundle-config", () => {
     expect(isHeadlessModeArgv(["--mode", "json"])).toBe(true);
     expect(isHeadlessModeArgv(["--mode=json"])).toBe(true);
     expect(isHeadlessModeArgv(["--mode", "tui"])).toBe(false);
+  });
+
+  test("skills-disable detection matches --no-skills argv modes", () => {
+    expect(isSkillsDisabledArgv([])).toBe(false);
+    expect(isSkillsDisabledArgv(["--no-skills"])).toBe(true);
+    expect(isSkillsDisabledArgv(["-ns"])).toBe(true);
   });
 
   test("headless feature flag auto-enables in non-tui modes", () => {

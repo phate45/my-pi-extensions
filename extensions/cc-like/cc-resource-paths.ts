@@ -1,7 +1,7 @@
 import type { ExtensionAPI } from "@earendil-works/pi-coding-agent";
 import { discoverClaudeResourceDirs } from "./lib/claude-resource-discovery.js";
 import { discoverClaudeSkillDirs } from "./lib/cc-skill-discovery.js";
-import { isExtensionEnabled } from "../infra/lib/bundle-config.js";
+import { areSkillsDisabled, isExtensionEnabled } from "../infra/lib/bundle-config.js";
 import { defineManagedExtension } from "../infra/lib/managed-extension.js";
 
 function getPromptPaths(cwd: string) {
@@ -13,6 +13,7 @@ function getPromptPaths(cwd: string) {
 
 function getSkillPaths(cwd: string) {
   if (!isExtensionEnabled("cc-skill-paths")) return undefined;
+  if (areSkillsDisabled()) return undefined;
 
   const skillPaths = discoverClaudeSkillDirs(cwd);
   return skillPaths.length > 0 ? skillPaths : undefined;

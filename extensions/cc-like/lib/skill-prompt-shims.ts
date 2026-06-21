@@ -1,8 +1,7 @@
 import { createHash } from "node:crypto";
-import { existsSync, mkdirSync, readdirSync, rmSync, statSync, writeFileSync } from "node:fs";
+import { mkdirSync, rmSync, writeFileSync } from "node:fs";
 import path from "node:path";
-import { discoverClaudeResourceDirs } from "./claude-resource-discovery.js";
-import { readSkillDocument } from "./skill-execution.js";
+import { discoverClaudeSkills } from "./skill-execution.js";
 
 function escapeYamlString(value: string): string {
   return JSON.stringify(value);
@@ -16,13 +15,13 @@ function normalizeProjectPath(cwd: string): string {
 }
 
 function renderShimBody(skillName: string): string {
-  return `<pi-skill-prompt-shim-failure skill=${JSON.stringify(skillName)} expected_interceptor="extensions/skill-tool.ts">
+  return `<pi-skill-prompt-shim-failure skill=${JSON.stringify(skillName)} expected_interceptor="extensions/cc-like/skill-prompts.ts">
 STOP IMMEDIATELY.
 
 This prompt template is only an autocomplete shim for a user-invocable skill.
 It should never reach the model as executable task content.
 
-The Pi skill-tool input interceptor failed to catch /skill:${skillName} before prompt-template expansion.
+The Pi skill-prompts input interceptor failed to catch /skill:${skillName} before prompt-template expansion.
 
 Do not continue the user's requested task.
 Report this failure to Mark, including:
@@ -30,36 +29,6 @@ Report this failure to Mark, including:
 - the command that was invoked, if visible
 - that the generated prompt shim expanded instead of the skill execution path
 </pi-skill-prompt-shim-failure>`;
-}
-
-function discoverSkillFilesFromDir(dir: string): string[] {
-  const out: string[] = [];
-  if (!existsSync(dir)) return out;
-
-  const walk = (current: string) => {
-    const skillFile = path.join(current, "SKILL.md");
-    if (existsSync(skillFile) && statSync(skillFile).isFile()) {
-      out.push(skillFile);
-      return;
-    }
-
-    for (const entry of readdirSync(current, { withFileTypes: true })) {
-      if (entry.name.startsWith(".") || entry.name === "node_modules") continue;
-      const fullPath = path.join(current, entry.name);
-      let isDirectory = entry.isDirectory();
-      if (entry.isSymbolicLink()) {
-        try {
-          isDirectory = statSync(fullPath).isDirectory();
-        } catch {
-          continue;
-        }
-      }
-      if (isDirectory) walk(fullPath);
-    }
-  };
-
-  walk(dir);
-  return out;
 }
 
 export function generateSkillPromptShims(cwd: string): string | null {
@@ -75,37 +44,28 @@ export function generateSkillPromptShims(cwd: string): string | null {
   let count = 0;
   const seenNames = new Set<string>();
 
-  for (const skillDir of discoverClaudeResourceDirs(cwd, "skills")) {
-    for (const skillFile of discoverSkillFilesFromDir(skillDir)) {
-      let document;
-      try {
-        document = readSkillDocument(skillFile);
-      } catch {
-        continue;
-      }
+  for (const skill of discoverClaudeSkills(cwd)) {
+    const metadata = skill;
+    if (metadata.userInvocable === false) continue;
+    if (seenNames.has(metadata.name)) continue;
+    seenNames.add(metadata.name);
 
-      const metadata = document.frontmatter.metadata;
-      if (metadata.userInvocable === false) continue;
-      if (seenNames.has(metadata.name)) continue;
-      seenNames.add(metadata.name);
+    const frontmatter = [
+      "---",
+      `description: ${escapeYamlString(metadata.description)}`,
+      ...(metadata.argumentHint
+        ? [`argument-hint: ${escapeYamlString(metadata.argumentHint)}`]
+        : []),
+      "---",
+      "",
+    ].join("\n");
 
-      const frontmatter = [
-        "---",
-        `description: ${escapeYamlString(metadata.description)}`,
-        ...(metadata.argumentHint
-          ? [`argument-hint: ${escapeYamlString(metadata.argumentHint)}`]
-          : []),
-        "---",
-        "",
-      ].join("\n");
-
-      writeFileSync(
-        path.join(shimDir, `skill:${metadata.name}.md`),
-        `${frontmatter}${renderShimBody(metadata.name)}\n`,
-        "utf8",
-      );
-      count++;
-    }
+    writeFileSync(
+      path.join(shimDir, `skill:${metadata.name}.md`),
+      `${frontmatter}${renderShimBody(metadata.name)}\n`,
+      "utf8",
+    );
+    count++;
   }
 
   return count > 0 ? shimDir : null;

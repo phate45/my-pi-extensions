@@ -6,8 +6,9 @@ import type {
 import { readFileSync } from "node:fs";
 import { defineManagedExtension } from "../infra/lib/managed-extension.js";
 import { maybeRealpath } from "./lib/cc-context.js";
+import { isClaudeResourcePath } from "./lib/claude-resource-discovery.js";
 import { expandClaudeMarkdownResource } from "./lib/claude-markdown-expansion.js";
-import { parseShellLikeArgs } from "./lib/cli-args.js";
+import { parseSlashCommandLine } from "./lib/skill-invocation.js";
 import {
   extractTextContent,
   normalizeReadPath,
@@ -17,17 +18,6 @@ import {
 function stripFrontmatter(raw: string): string {
   const { body } = splitFrontmatter(raw);
   return body.trim();
-}
-
-function parseCommandLine(text: string): { name: string; argsText: string; args: string[] } | null {
-  const trimmed = text.trim();
-  if (!trimmed.startsWith("/")) return null;
-
-  const withoutSlash = trimmed.slice(1);
-  const firstSpace = withoutSlash.search(/\s/);
-  const name = firstSpace === -1 ? withoutSlash : withoutSlash.slice(0, firstSpace);
-  const argsText = firstSpace === -1 ? "" : withoutSlash.slice(firstSpace).trim();
-  return { name, argsText, args: parseShellLikeArgs(argsText) };
 }
 
 function substituteTemplateArgs(template: string, args: string[], argsText: string): string {
@@ -76,13 +66,18 @@ export default defineManagedExtension({
   featureFlag: "ccLike",
   setup(pi: ExtensionAPI) {
     pi.on("input", async (event, ctx) => {
-      const parsed = parseCommandLine(event.text);
+      const parsed = parseSlashCommandLine(event.text);
       if (!parsed) return { action: "continue" as const };
 
       if (parsed.name.startsWith("skill:")) return { action: "continue" as const };
 
       const command = pi.getCommands().find((c) => c.name === parsed.name);
       if (!command) return { action: "continue" as const };
+      if (command.source === "prompt" && command.sourceInfo?.path) {
+        if (isClaudeResourcePath(ctx.cwd, command.sourceInfo.path, "commands")) {
+          return { action: "continue" as const };
+        }
+      }
 
       try {
         if (command.source === "prompt") {

@@ -1,6 +1,7 @@
 import type { ExtensionAPI, ExtensionContext } from "@earendil-works/pi-coding-agent";
-import { readFileSync } from "node:fs";
+import { existsSync, readFileSync, readdirSync, statSync } from "node:fs";
 import path from "node:path";
+import { discoverClaudeSkillDirs } from "./cc-skill-discovery.js";
 import { parseShellLikeArgs } from "./cli-args.js";
 import { expandClaudeMarkdownResource } from "./claude-markdown-expansion.js";
 import { splitFrontmatter } from "./markdown-preprocess.js";
@@ -213,8 +214,70 @@ export function getSkillCommands(pi: ExtensionAPI): SkillSummary[] {
     });
 }
 
+function discoverSkillFilesFromDir(dir: string): string[] {
+  const out: string[] = [];
+  if (!existsSync(dir)) return out;
+
+  const walk = (current: string) => {
+    const skillFile = path.join(current, "SKILL.md");
+    if (existsSync(skillFile) && statSync(skillFile).isFile()) {
+      out.push(skillFile);
+      return;
+    }
+
+    for (const entry of readdirSync(current, { withFileTypes: true })) {
+      if (entry.name.startsWith(".") || entry.name === "node_modules") continue;
+      const fullPath = path.join(current, entry.name);
+      let isDirectory = entry.isDirectory();
+      if (entry.isSymbolicLink()) {
+        try {
+          isDirectory = statSync(fullPath).isDirectory();
+        } catch {
+          continue;
+        }
+      }
+      if (isDirectory) walk(fullPath);
+    }
+  };
+
+  walk(dir);
+  return out;
+}
+
+export function discoverClaudeSkills(cwd: string): SkillSummary[] {
+  const seenNames = new Set<string>();
+  const skills: SkillSummary[] = [];
+
+  for (const skillDir of discoverClaudeSkillDirs(cwd)) {
+    for (const skillFile of discoverSkillFilesFromDir(skillDir)) {
+      let document;
+      try {
+        document = readSkillDocument(skillFile);
+      } catch {
+        continue;
+      }
+
+      const metadata = document.frontmatter.metadata;
+      if (seenNames.has(metadata.name)) continue;
+      seenNames.add(metadata.name);
+
+      skills.push({
+        ...metadata,
+        path: skillFile,
+        baseDir: path.dirname(skillFile),
+      });
+    }
+  }
+
+  return skills;
+}
+
 export function findSkill(pi: ExtensionAPI, name: string): SkillSummary | undefined {
   return getSkillCommands(pi).find((skill) => skill.name === name);
+}
+
+export function findClaudeSkill(cwd: string, name: string): SkillSummary | undefined {
+  return discoverClaudeSkills(cwd).find((skill) => skill.name === name);
 }
 
 export async function expandSkill(

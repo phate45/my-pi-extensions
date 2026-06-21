@@ -95,11 +95,19 @@ export function isHeadlessModeArgv(argv: string[]) {
   return false;
 }
 
+export function isSkillsDisabledArgv(argv: string[]) {
+  return argv.includes("--no-skills") || argv.includes("-ns");
+}
+
 function isHeadlessFeatureEnabled() {
   const state = getState();
   return (
     state.settings.featureFlags?.headless === true || isHeadlessModeArgv(process.argv.slice(2))
   );
+}
+
+export function areSkillsDisabled() {
+  return isSkillsDisabledArgv(process.argv.slice(2));
 }
 
 function preloadBundleConfigFromProcess(): BundleConfigState {

@@ -54,3 +54,16 @@ export function discoverClaudeResourceDirs(cwd: string, kind: ClaudeResourceKind
 
   return resourcePaths;
 }
+
+export function isClaudeResourcePath(
+  cwd: string,
+  filePath: string,
+  kind: ClaudeResourceKind,
+): boolean {
+  const resolvedPath = maybeRealpath(filePath);
+
+  return discoverClaudeResourceDirs(cwd, kind).some((dir) => {
+    const resolvedDir = maybeRealpath(dir);
+    return resolvedPath === resolvedDir || resolvedPath.startsWith(`${resolvedDir}${path.sep}`);
+  });
+}

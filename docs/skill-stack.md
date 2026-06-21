@@ -2,16 +2,27 @@
 
 ## Purpose
 
-The skill stack makes Claude-style skills feel native in Pi while preserving a clean separation between raw file inspection and actual skill execution.
+The skill stack makes Claude-style invocation resources feel native in Pi while preserving a clean separation between raw file inspection and actual execution.
 
 ## Responsibilities
 
 This stack owns:
 - `.claude/skills` discovery
+- `.claude/commands` discovery as invocation resources, not ordinary Pi prompts
 - model-facing `skill` tool registration
 - human `/skill:name args` execution
+- human `/command-name args` execution for `.claude/commands/command-name.md` through the same invocation family
 - generated prompt shims for skill commands
 - startup and prompt filtering so shims do not masquerade as normal prompts
+
+Current entrypoint split:
+- `skill-tool.ts` owns native Pi skill integration for model-facing execution and system-prompt skill listing
+- `skill-prompts.ts` owns human-facing invocation shims and input interception for Claude-style resources
+
+Mode interaction:
+- Pi `--no-skills|-ns` disables native skill discovery and the model-facing `skill` tool
+- in interactive runs, Claude-style human invocation still works through `skill-prompts.ts`
+- in effective headless mode, that human invocation layer stays off as well
 
 ## Invariants
 
@@ -19,6 +30,7 @@ Keep these aligned:
 - visible skill list
 - model-facing tool behavior
 - human command behavior
+- Claude command behavior
 - generated shim metadata
 - startup and prompt filtering
 - raw `read SKILL.md` remaining raw inspection
@@ -34,6 +46,9 @@ Do not infer it from a broader command base directory.
 
 After changes, confirm:
 - `.claude/skills` discovery still works
-- `/skill:name args` executes through the same real stack as the model-facing tool
+- `.claude/commands` still load, but run through the invocation pipeline instead of inline prompt expansion
+- `/skill:name args` executes through the same real stack as the model-facing tool when native skills are enabled
+- `/command-name args` and `/skill:name args` both route through the human invocation path
 - generated `/skill:*` shims do not show up as ordinary prompts
+- ordinary Pi prompt templates still expand inline as prompts
 - raw `read SKILL.md` remains inspection, not execution

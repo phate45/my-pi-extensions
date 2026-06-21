@@ -26,7 +26,7 @@ Owns:
 - `.claude` resource discovery
 - markdown expansion
 - context loading and reporting
-- skill execution and prompt shims
+- skill execution, Claude command invocation, and prompt shims
 - startup header and git context
 
 ### `extensions/my-stuff/`

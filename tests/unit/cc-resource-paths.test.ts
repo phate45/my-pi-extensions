@@ -10,6 +10,7 @@ import {
 import { createMockExtensionAPI } from "../helpers/mock-extension-api.js";
 
 const tempDirs: string[] = [];
+const originalArgv = [...process.argv];
 
 async function makeTempDir() {
   const dir = await mkdtemp(path.join(os.tmpdir(), "cc-resource-paths-"));
@@ -19,6 +20,7 @@ async function makeTempDir() {
 
 afterEach(async () => {
   resetBundleConfigForTests();
+  process.argv = [...originalArgv];
 
   while (tempDirs.length > 0) {
     const dir = tempDirs.pop();
@@ -79,6 +81,25 @@ describe("cc-resource-paths extension", () => {
       skillPaths: expect.arrayContaining([path.join(project, ".claude", "skills")]),
     });
     expect(result?.promptPaths).toBeUndefined();
+  });
+
+  test("suppresses skillPaths under --no-skills while keeping command paths", async () => {
+    const root = await makeTempDir();
+    const project = path.join(root, "project");
+    await mkdir(path.join(project, ".claude", "commands"), { recursive: true });
+    await mkdir(path.join(project, ".claude", "skills"), { recursive: true });
+    process.argv = [process.argv[0] ?? "node", process.argv[1] ?? "test", "--no-skills"];
+
+    const { pi, handlers } = createMockExtensionAPI();
+    ccResourcePathsExtension(pi);
+
+    const handler = handlers.get("resources_discover")?.[0];
+    const result = await handler?.({ cwd: project });
+
+    expect(result).toEqual({
+      promptPaths: expect.arrayContaining([path.join(project, ".claude", "commands")]),
+    });
+    expect(result?.skillPaths).toBeUndefined();
   });
 
   test("skips registration when disabled via bundle config", () => {
