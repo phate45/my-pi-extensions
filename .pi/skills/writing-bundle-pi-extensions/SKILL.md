@@ -12,7 +12,7 @@ This skill is for extension work in `my-pi-extensions`: adding entrypoints, refa
 Decide what kind of extension work this is before touching files.
 
 - **Infra**: generic bundle plumbing shared across extension families
-  - examples: bundle config loader, managed extension shim
+  - examples: bundle config loader, managed extension shim, shared input pipeline ordering
   - location: `extensions/infra/`
 - **Claude-compat behavior**: Claude Code-like Pi behavior
   - location: `extensions/cc-like/`
@@ -50,6 +50,7 @@ Use the smallest layer that honestly owns the behavior.
 - the logic is generic across extension families
 - the code defines shared bundle policy
 - feature gating/config plumbing would otherwise be duplicated
+- multiple extension families need deterministic composition, such as send-time input transforms before command routing
 
 ### Put code in `extensions/cc-like/` when
 - the behavior is part of Claude-compat semantics
@@ -114,6 +115,7 @@ Pi entrypoints are plain functions over `ExtensionAPI`. Keep them obvious.
 - Avoid inheritance and lifecycle abstraction layers
 - Do not obscure when behavior runs at factory time versus `session_start`
 - Keep feature gating explicit at the entrypoint boundary
+- When send-time input ordering matters, prefer the shared infra input pipeline over separate raw `pi.on("input")` handlers that silently depend on extension load order
 
 If a shared abstraction makes it harder to see when registration happens, it is too clever.
 

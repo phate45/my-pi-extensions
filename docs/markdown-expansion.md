@@ -1,6 +1,6 @@
 ---
 created: 2026-06-21T10:13:05
-modified: 2026-06-21T10:57:10
+modified: 2026-06-21T15:33:29
 ---
 
 # Markdown Expansion
@@ -44,6 +44,7 @@ It should not execute skills, preprocess raw skill inspection, or treat generate
 For Claude-compat resources, distinguish ordinary prompts from invocation resources:
 - ordinary Pi prompt templates still expand inline through prompt preprocessing
 - `.claude/commands` should be intercepted before inline prompt expansion and routed through the Claude invocation path instead
+- transformed input that becomes a Claude command at send time should still hit that invocation path before ordinary prompt expansion
 
 ## Verification
 

@@ -45,6 +45,7 @@ Start here when the work touches one of these stacks:
 
 - overall package shape → `docs/architecture.md`
 - bundle config and managed entrypoints → `docs/bundle-config.md`
+- shared input transform/router ordering → `extensions/infra/input-pipeline.ts`, `docs/bundle-config.md`
 - context loading and `/context` behavior → `docs/context-stack.md`
 - markdown expansion and prompt preprocessing → `docs/markdown-expansion.md`
 - skills and skill-tool behavior → `docs/skill-stack.md`
@@ -58,6 +59,7 @@ After changing anything important, verify the right slice instead of relying on 
 - use the local `justfile` recipes (`just test`, ...)
 - run `just lint` freely after edits; this repo uses Biome for formatting
 - use `just lint-ci` when you want a non-mutating formatting check via Biome (formatting only, no assist/lint noise)
+- when send-time input behavior changes, verify the shared input pipeline path instead of adding competing raw `pi.on("input")` handlers by accident
 - reload Pi after package changes
 - use a fresh Pi session for startup and system-prompt validation
 - confirm `.claude/commands` and `.claude/skills` still load

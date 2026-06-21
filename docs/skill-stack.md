@@ -1,6 +1,6 @@
 ---
 created: 2026-06-21T10:13:05
-modified: 2026-06-21T10:57:10
+modified: 2026-06-21T15:33:17
 ---
 
 # Skill Stack
@@ -22,7 +22,8 @@ This stack owns:
 
 Current entrypoint split:
 - `skill-tool.ts` owns native Pi skill integration for model-facing execution and system-prompt skill listing
-- `skill-prompts.ts` owns human-facing invocation shims and input interception for Claude-style resources
+- `skill-prompts.ts` owns human-facing invocation shims, Claude command routing, and compact invocation message rendering for Claude-style resources
+- `infra/input-pipeline.ts` owns the shared `input` event so transforms such as abbreviations can run before Claude command routing without cross-family imports
 
 Mode interaction:
 - Pi `--no-skills|-ns` disables native skill discovery and the model-facing `skill` tool
@@ -36,6 +37,7 @@ Keep these aligned:
 - model-facing tool behavior
 - human command behavior
 - Claude command behavior
+- compact invocation UI for Claude commands
 - generated shim metadata
 - startup and prompt filtering
 - raw `read SKILL.md` remaining raw inspection
@@ -52,6 +54,8 @@ Do not infer it from a broader command base directory.
 After changes, confirm:
 - `.claude/skills` discovery still works
 - `.claude/commands` still load, but run through the invocation pipeline instead of inline prompt expansion
+- `.claude/commands` render as compact invocation rows in the UI instead of visible inline XML payloads
+- transformed slash input such as abbreviation-expanded `/from-handoff ...` still reaches Claude command routing
 - `/skill:name args` executes through the same real stack as the model-facing tool when native skills are enabled
 - `/command-name args` and `/skill:name args` both route through the human invocation path
 - generated `/skill:*` shims do not show up as ordinary prompts

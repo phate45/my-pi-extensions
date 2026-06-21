@@ -1,6 +1,6 @@
 ---
 created: 2026-06-21T10:13:05
-modified: 2026-06-21T13:47:37
+modified: 2026-06-21T15:33:24
 ---
 
 # Bundle Config
@@ -83,6 +83,19 @@ Important timing rule:
 - therefore, any behavior that must honor trusted local config should call the getter at runtime inside handlers, commands, or tool execution rather than caching config at factory time
 
 That avoids the worst flavor of surprise: loaded extension, correct local config file, absolutely nothing happens because the extension captured pre-trust config once and called it a day.
+
+## Input ordering
+
+Pi runs `input` handlers in plain registration order and does not restart the chain after a transform.
+This bundle now hides that footgun behind `extensions/infra/input-pipeline.ts`.
+
+Bundle-owned send-time input behavior should register into the shared pipeline instead of adding independent `pi.on("input")` handlers when ordering matters.
+
+Current split:
+- transforms rewrite text first
+- routers classify the transformed text second
+
+That keeps personal transforms such as abbreviations decoupled from Claude-style routing while still letting `hnd` become `/from-handoff ...` before the cc-like command stack inspects it.
 
 ## Typed config helpers
 
