@@ -4,6 +4,8 @@ import os from "node:os";
 import path from "node:path";
 import skillPromptsExtension from "../../extensions/cc-like/skill-prompts.js";
 import { resetBundleConfigForTests } from "../../extensions/infra/lib/bundle-config.js";
+import inputPipelineExtension from "../../extensions/infra/input-pipeline.js";
+import { resetInputPipelineForTests } from "../../extensions/infra/lib/input-pipeline.js";
 import { createMockExtensionAPI } from "../helpers/mock-extension-api.js";
 
 const tempDirs: string[] = [];
@@ -39,6 +41,7 @@ async function writeClaudeCommand(projectDir: string, name = "demo-command") {
 
 afterEach(async () => {
   resetBundleConfigForTests();
+  resetInputPipelineForTests();
   process.argv = [...originalArgv];
 
   while (tempDirs.length > 0) {
@@ -49,9 +52,10 @@ afterEach(async () => {
 });
 
 describe("skill-prompts extension", () => {
-  test("registers prompt-shim and input handlers when enabled", () => {
+  test("registers prompt-shim handlers and relies on the shared input pipeline", () => {
     const { pi, handlers } = createMockExtensionAPI();
 
+    inputPipelineExtension(pi);
     skillPromptsExtension(pi);
 
     expect(handlers.get("resources_discover")?.length).toBe(1);
@@ -59,12 +63,13 @@ describe("skill-prompts extension", () => {
     expect(handlers.get("input")?.length).toBe(1);
   });
 
-  test("expands /skill commands directly from Claude skills under --no-skills", async () => {
+  test("routes /skill commands through the Claude-style invocation path", async () => {
     const root = await makeTempDir();
     await writeSkill(root);
     process.argv = [process.argv[0] ?? "node", process.argv[1] ?? "test", "--no-skills"];
 
     const { pi, handlers } = createMockExtensionAPI();
+    inputPipelineExtension(pi);
     skillPromptsExtension(pi);
 
     const input = handlers.get("input")?.[0];
@@ -86,14 +91,15 @@ describe("skill-prompts extension", () => {
     expect(result.text).toContain("ARGUMENTS: test-arg");
   });
 
-  test("funnels .claude/commands through the invocation pipeline", async () => {
+  test("routes .claude/commands through the Claude invocation path instead of ordinary prompt expansion", async () => {
     const root = await makeTempDir();
     const commandPath = await writeClaudeCommand(root);
 
-    const { pi, handlers } = createMockExtensionAPI();
+    const { pi, handlers, sentMessages, sentUserMessages } = createMockExtensionAPI();
     (pi as any).getCommands = () => [
       { name: "demo-command", source: "prompt", sourceInfo: { path: commandPath } },
     ];
+    inputPipelineExtension(pi);
     skillPromptsExtension(pi);
 
     const input = handlers.get("input")?.[0];
@@ -107,12 +113,34 @@ describe("skill-prompts extension", () => {
       },
     );
 
-    expect(result).toEqual({
-      action: "transform",
-      images: [],
-      text: expect.stringContaining('<claude-command name="demo-command"'),
-    });
-    expect(result.text).toContain("Argument: hello world");
+    expect(result).toEqual({ action: "handled" });
+    expect(sentMessages).toEqual([
+      {
+        message: {
+          customType: "claude-command-invocation",
+          content: "",
+          display: true,
+          details: {
+            name: "demo-command",
+            content: expect.stringContaining('<claude-command name="demo-command"'),
+          },
+        },
+        options: undefined,
+      },
+      {
+        message: {
+          customType: "claude-command-invocation",
+          content: expect.stringContaining('<claude-command name="demo-command"'),
+          display: false,
+          details: {
+            name: "demo-command",
+            content: expect.stringContaining('<claude-command name="demo-command"'),
+          },
+        },
+        options: { triggerTurn: true },
+      },
+    ]);
+    expect(sentUserMessages).toEqual([]);
   });
 
   test("skips registration in headless mode", () => {
@@ -122,5 +150,34 @@ describe("skill-prompts extension", () => {
     skillPromptsExtension(pi);
 
     expect([...handlers.keys()]).toEqual([]);
+  });
+
+  test("ignores extension-originated Claude command payloads to avoid rerouting loops", async () => {
+    const root = await makeTempDir();
+    const commandPath = await writeClaudeCommand(root);
+
+    const { pi, handlers, sentMessages, sentUserMessages } = createMockExtensionAPI();
+    (pi as any).getCommands = () => [
+      { name: "demo-command", source: "prompt", sourceInfo: { path: commandPath } },
+    ];
+    inputPipelineExtension(pi);
+    skillPromptsExtension(pi);
+
+    const handler = handlers.get("input")?.[0];
+    const result = await handler?.(
+      {
+        text: "/demo-command hello world",
+        images: [],
+        source: "extension",
+      },
+      {
+        cwd: root,
+        ui: { notify() {} },
+      },
+    );
+
+    expect(result).toEqual({ action: "continue" });
+    expect(sentMessages).toEqual([]);
+    expect(sentUserMessages).toEqual([]);
   });
 });

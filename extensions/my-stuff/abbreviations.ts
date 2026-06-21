@@ -1,6 +1,7 @@
 import { CustomEditor, type ExtensionAPI } from "@earendil-works/pi-coding-agent";
 import { Key, matchesKey } from "@earendil-works/pi-tui";
 import { isFeatureFlagEnabled } from "../infra/lib/bundle-config.js";
+import { registerInputTransform } from "../infra/lib/input-pipeline.js";
 import { defineManagedExtension } from "../infra/lib/managed-extension.js";
 import {
   applyPlainSpaceAbbreviation,
@@ -51,17 +52,11 @@ export default defineManagedExtension({
       });
     });
 
-    pi.on("input", async (event) => {
+    registerInputTransform("abbreviations", ({ text }) => {
       const config = getAbbreviationsConfig();
-      const transformed = expandInputAbbreviations(event.text, config);
-      if (transformed === undefined) {
-        return { action: "continue" } as const;
-      }
-
-      return {
-        action: "transform",
-        text: transformed,
-      } as const;
+      const transformed = expandInputAbbreviations(text, config);
+      if (transformed === undefined) return undefined;
+      return { text: transformed };
     });
   },
 });

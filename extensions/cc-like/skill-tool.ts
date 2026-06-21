@@ -1,7 +1,8 @@
-import { keyText, type ExtensionAPI } from "@earendil-works/pi-coding-agent";
+import type { ExtensionAPI } from "@earendil-works/pi-coding-agent";
 import { Text } from "@earendil-works/pi-tui";
 import { Type } from "typebox";
 import { getSkillCommands, type SkillSummary } from "./lib/skill-execution.js";
+import { formatExpandedInvocation, formatSkillLikeInvocation } from "./lib/invocation-render.js";
 import { executeSkillByName } from "./lib/skill-invocation.js";
 import { areSkillsDisabled } from "../infra/lib/bundle-config.js";
 import { defineManagedExtension } from "../infra/lib/managed-extension.js";
@@ -13,17 +14,6 @@ const skillToolSchema = Type.Object({
 type SkillToolParams = {
   name: string;
 };
-
-function formatSkillToolCall(
-  name: string,
-  theme: { fg: (color: string, text: string) => string },
-): string {
-  return (
-    theme.fg("customMessageLabel", `\x1b[1m[skill]\x1b[22m `) +
-    theme.fg("customMessageText", name) +
-    theme.fg("dim", ` (${keyText("app.tools.expand")} to expand)`)
-  );
-}
 
 function formatSkillToolResult(
   result: { content: Array<{ type: string; text?: string }> },
@@ -41,11 +31,7 @@ function formatSkillToolResult(
     .map((item) => item.text)
     .join("\n");
 
-  if (!text) return "";
-  return `\n${text
-    .split("\n")
-    .map((line) => theme.fg("toolOutput", line))
-    .join("\n")}`;
+  return formatExpandedInvocation(text, true, theme);
 }
 
 function escapeXml(str: string): string {
@@ -125,7 +111,10 @@ export default defineManagedExtension({
           const text = (context.lastComponent as Text | undefined) ?? new Text("", 0, 0);
           const name = typeof args?.name === "string" && args.name ? args.name : "...";
           text.setText(
-            formatSkillToolCall(name, theme as { fg: (color: string, text: string) => string }),
+            formatSkillLikeInvocation(
+              name,
+              theme as { fg: (color: string, text: string) => string },
+            ),
           );
           return text;
         },

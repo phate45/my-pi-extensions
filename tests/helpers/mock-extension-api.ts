@@ -7,12 +7,16 @@ export type MockExtensionAPI = {
   handlers: Map<string, Function[]>;
   tools: unknown[];
   commands: string[];
+  sentMessages: unknown[];
+  sentUserMessages: unknown[];
 };
 
 export function createMockExtensionAPI(): MockExtensionAPI {
   const handlers = new Map<string, Function[]>();
   const tools: unknown[] = [];
   const commands: string[] = [];
+  const sentMessages: unknown[] = [];
+  const sentUserMessages: unknown[] = [];
 
   const pi: Partial<ExtensionAPI> = {
     on(event: EventName, handler: Function) {
@@ -32,8 +36,12 @@ export function createMockExtensionAPI(): MockExtensionAPI {
       return undefined;
     },
     registerMessageRenderer() {},
-    sendMessage() {},
-    sendUserMessage() {},
+    sendMessage(message, options) {
+      sentMessages.push({ message, options });
+    },
+    sendUserMessage(content, options) {
+      sentUserMessages.push({ content, options });
+    },
     appendEntry() {},
     setSessionName() {},
     getSessionName() {
@@ -68,5 +76,7 @@ export function createMockExtensionAPI(): MockExtensionAPI {
     handlers,
     tools,
     commands,
+    sentMessages,
+    sentUserMessages,
   };
 }
