@@ -6,9 +6,9 @@ Write a handoff document that lets a fresh agent continue this work in this repo
 
 Built-in file status checks:
 
-handoff exists: .tmp/handoff.md
+! if [ -f .tmp/handoff.md ]; then echo "handoff exists: .tmp/handoff.md"; else echo "handoff missing: .tmp/handoff.md"; fi
 
-work log exists: /home/agent/Documents/second-brain/01_Projects/my-pi-extensions/logs/2026-06-20.md
+! day=$(date +%F); file="$HOME/Documents/second-brain/01_Projects/my-pi-extensions/logs/$day.md"; if [ -f "$file" ]; then echo "work log exists: $file"; else echo "work log missing: $file"; fi
 
 Save the handoff to `.tmp/handoff.md` in this project. Overwrite the file if it already exists.
 

@@ -15,7 +15,7 @@ Do not spend a tool call re-reading `.tmp/handoff.md` unless you have a specific
 
 If today's work log exists, you may reference it for reasoning support:
 
-work log exists: /home/agent/Documents/second-brain/01_Projects/my-pi-extensions/logs/2026-06-20.md
+! day=$(date +%F); file="$HOME/Documents/second-brain/01_Projects/my-pi-extensions/logs/$day.md"; if [ -f "$file" ]; then echo "work log exists: $file"; else echo "work log missing: $file"; fi
 
 Instructions:
 - Read the embedded handoff block inside `<handoff-contents>` above as immediate context.
