@@ -24,15 +24,18 @@ type RunPiOptions = {
   env: TempPiEnv;
   approve?: boolean;
   overrideSettingsPath?: string;
+  headless?: boolean;
 };
 
 const repoRoot = process.cwd();
 const probePath = path.join(repoRoot, "tests", "probes", "capture-extension-state.ts");
-const packagePath = repoRoot;
 
 export async function runPiAndCaptureState(options: RunPiOptions): Promise<CapturedExtensionState> {
   const outputPath = path.join(options.env.outputDir, "state.json");
   const args = ["--no-session", "-e", probePath];
+  const headless = options.headless ?? true;
+
+  if (headless) args.push("-p");
 
   if (options.approve === true) args.push("--approve");
   if (options.approve === false) args.push("--no-approve");
@@ -78,6 +81,6 @@ export async function runPiAndCaptureState(options: RunPiOptions): Promise<Captu
 export function buildAgentSettings() {
   return {
     quietStartup: true,
-    packages: [packagePath],
+    packages: [repoRoot],
   };
 }
