@@ -8,6 +8,11 @@
 import { isFeatureFlagEnabled } from "../infra/lib/bundle-config.js";
 import { defineManagedExtension } from "../infra/lib/managed-extension.js";
 
+function formatCompletionTimestamp(timestamp: number): string {
+  const iso = new Date(timestamp).toISOString();
+  return iso.slice(0, 19).replace("T", " ");
+}
+
 export default defineManagedExtension({
   name: "tps-tracker",
   featureFlag: "myStuff",
@@ -80,15 +85,10 @@ export default defineManagedExtension({
 
       const messageTokens = event.message.usage.output;
       const timingStart = streamStart ?? messageStart;
-      if (!timingStart || messageTokens <= 0) {
-        messageStart = null;
-        streamStart = null;
-        estimatedStreamedTokens = 0;
-        return;
+      if (timingStart && messageTokens > 0) {
+        totalOutputTokens += messageTokens;
+        totalStreamMs += Math.max(0, Date.now() - timingStart);
       }
-
-      totalOutputTokens += messageTokens;
-      totalStreamMs += Math.max(0, Date.now() - timingStart);
 
       messageStart = null;
       streamStart = null;
@@ -108,7 +108,9 @@ export default defineManagedExtension({
         `${totalOutputTokens} tokens in ${elapsed.toFixed(1)}s streaming`,
       );
 
-      ctx.ui.notify(`${theme.fg("success", "✓")} ${tpsLabel}  ${detail}`, "info");
+      const completedAt = theme.fg("dim", `[${formatCompletionTimestamp(Date.now())}]`);
+
+      ctx.ui.notify(`${theme.fg("success", "✓")} ${tpsLabel}  ${detail}  ${completedAt}`, "info");
       ctx.ui.setStatus("tps", theme.fg("dim", `done — ${tps > 0 ? `${tps} tok/s` : "N/A"}`));
     });
   },

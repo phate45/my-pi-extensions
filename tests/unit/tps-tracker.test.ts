@@ -23,6 +23,46 @@ describe("tps-tracker extension", () => {
     expect(handlers.get("agent_end")?.length).toBe(1);
   });
 
+  test("includes a completion timestamp in the agent_end notification", async () => {
+    const { pi, handlers } = createMockExtensionAPI();
+    tpsTrackerExtension(pi);
+
+    const notifyCalls: Array<{ message: string; level: string }> = [];
+    const statusCalls: Array<{ key: string; message: string }> = [];
+    const theme = { fg: (_tone: string, text: string) => text };
+    const originalDateNow = Date.now;
+    Date.now = () => Date.UTC(2026, 5, 21, 12, 34, 56);
+
+    try {
+      const handler = handlers.get("agent_end")?.[0];
+      await handler?.(
+        {},
+        {
+          hasUI: true,
+          ui: {
+            theme,
+            notify(message: string, level: string) {
+              notifyCalls.push({ message, level });
+            },
+            setStatus(key: string, message: string) {
+              statusCalls.push({ key, message });
+            },
+          },
+        },
+      );
+    } finally {
+      Date.now = originalDateNow;
+    }
+
+    expect(notifyCalls).toEqual([
+      {
+        message: "✓ N/A  0 tokens in 0.0s streaming  [2026-06-21 12:34:56]",
+        level: "info",
+      },
+    ]);
+    expect(statusCalls).toEqual([{ key: "tps", message: "done — N/A" }]);
+  });
+
   test("skips registration when disabled in bundle config", () => {
     const { pi, handlers } = createMockExtensionAPI();
     setBundleConfigForTests({
