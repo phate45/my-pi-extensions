@@ -1,6 +1,6 @@
 ---
 created: 2026-06-21T10:13:05
-modified: 2026-06-21T21:28:07
+modified: 2026-06-21T23:17:59
 ---
 
 # Context Stack
@@ -22,6 +22,9 @@ Current Claude-file knobs live under `extensions.cc-context-local-files.config.c
 - `global` → `~/.claude/CLAUDE.md`
 - `project` → `<git project root>/CLAUDE.md` (falls back to `cwd` outside git)
 - `local` → `<git project root>/CLAUDE.local.md` (falls back to `cwd` outside git)
+
+When `CLAUDE_PROJECT_DIR` is set, Claude-family project discovery uses that directory as its starting point instead of Pi's `cwd`.
+That override applies to Claude project-root resolution only; broader `AGENTS*` discovery still follows Pi's ordinary context path.
 
 Those knobs only control the Claude-family files. Existing `AGENTS*` discovery stays on the broader context path.
 

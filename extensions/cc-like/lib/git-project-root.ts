@@ -1,6 +1,7 @@
 import { execFileSync } from "node:child_process";
 import path from "node:path";
 import { realpathSync } from "node:fs";
+import { resolveClaudeProjectDir } from "./claude-project-dir.js";
 
 const projectRootCache = new Map<string, string>();
 
@@ -13,7 +14,7 @@ function maybeRealpath(dir: string): string {
 }
 
 export function resolveProjectRoot(cwd: string): string {
-  const resolvedCwd = maybeRealpath(cwd);
+  const resolvedCwd = resolveClaudeProjectDir(cwd);
   const cached = projectRootCache.get(resolvedCwd);
   if (cached) return cached;
 

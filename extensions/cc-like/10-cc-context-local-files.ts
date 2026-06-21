@@ -1,3 +1,8 @@
+import type {
+  BeforeAgentStartEvent,
+  ExtensionAPI,
+  ExtensionContext,
+} from "@earendil-works/pi-coding-agent";
 import { defineManagedExtension } from "../infra/lib/managed-extension.js";
 import {
   discoverEffectiveContextFiles,
@@ -16,8 +21,8 @@ export default defineManagedExtension({
   name: "cc-context-local-files",
   featureFlag: "ccLike",
   config: ccContextLocalFilesConfig,
-  setup(pi, _getConfig: () => CcContextLocalFilesConfig) {
-    pi.on("before_agent_start", async (event, ctx) => {
+  setup(pi: ExtensionAPI, _getConfig: () => CcContextLocalFilesConfig) {
+    pi.on("before_agent_start", async (event: BeforeAgentStartEvent, ctx: ExtensionContext) => {
       const stockFiles = discoverStockContextFiles(ctx.cwd, getAgentDir());
       const extendedFiles = discoverEffectiveContextFiles(ctx.cwd, getAgentDir());
       if (extendedFiles.length === 0 && stockFiles.length === 0) return;

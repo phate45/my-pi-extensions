@@ -1,5 +1,6 @@
 import type { ExtensionAPI, ExtensionContext } from "@earendil-works/pi-coding-agent";
 import { defineManagedExtension } from "../infra/lib/managed-extension.js";
+import { resolveClaudeProjectDir } from "./lib/claude-project-dir.js";
 
 type GitCounts = {
   staged: number;
@@ -75,18 +76,20 @@ function insertBeforeCurrentDate(systemPrompt: string, block: string): string {
 }
 
 async function buildGitContext(pi: ExtensionAPI, ctx: ExtensionContext): Promise<string> {
-  const inside = await git(pi, ctx.cwd, ["rev-parse", "--is-inside-work-tree"], ctx.signal);
+  const projectDir = resolveClaudeProjectDir(ctx.cwd);
+
+  const inside = await git(pi, projectDir, ["rev-parse", "--is-inside-work-tree"], ctx.signal);
   if (inside.code !== 0 || inside.stdout.trim() !== "true") return "";
 
-  const branchResult = await git(pi, ctx.cwd, ["branch", "--show-current"], ctx.signal);
+  const branchResult = await git(pi, projectDir, ["branch", "--show-current"], ctx.signal);
   let branch = branchResult.stdout.trim();
   if (!branch) {
-    const head = await git(pi, ctx.cwd, ["rev-parse", "--short", "HEAD"], ctx.signal);
+    const head = await git(pi, projectDir, ["rev-parse", "--short", "HEAD"], ctx.signal);
     branch = head.code === 0 && head.stdout.trim() ? `detached @ ${head.stdout.trim()}` : "unknown";
   }
 
-  const log = await git(pi, ctx.cwd, ["log", "--oneline", "-5"], ctx.signal);
-  const status = await git(pi, ctx.cwd, ["status", "--short"], ctx.signal);
+  const log = await git(pi, projectDir, ["log", "--oneline", "-5"], ctx.signal);
+  const status = await git(pi, projectDir, ["status", "--short"], ctx.signal);
 
   return renderGitContext(
     branch,

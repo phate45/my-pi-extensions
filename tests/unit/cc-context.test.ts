@@ -33,6 +33,13 @@ afterEach(async () => {
 });
 
 describe("cc context discovery", () => {
+  const originalClaudeProjectDir = process.env.CLAUDE_PROJECT_DIR;
+
+  afterEach(() => {
+    if (originalClaudeProjectDir === undefined) delete process.env.CLAUDE_PROJECT_DIR;
+    else process.env.CLAUDE_PROJECT_DIR = originalClaudeProjectDir;
+  });
+
   test("selects only the configured Claude files", async () => {
     const root = await makeTempDir();
     const agentDir = path.join(root, "agent");
@@ -98,6 +105,28 @@ describe("cc context discovery", () => {
 
     const files = discoverConfiguredClaudeContextFiles(
       nested,
+      { global: false, project: true, local: true },
+      path.join(root, "agent"),
+    );
+
+    expect(files.map((file) => path.relative(root, file.path))).toEqual([
+      path.join("project", "CLAUDE.md"),
+      path.join("project", "CLAUDE.local.md"),
+    ]);
+  });
+
+  test("configured Claude files resolve against CLAUDE_PROJECT_DIR instead of cwd", async () => {
+    const root = await makeTempDir();
+    const project = path.join(root, "project");
+    const sandbox = path.join(root, "sandbox", "run");
+    await mkdir(project, { recursive: true });
+    await mkdir(sandbox, { recursive: true });
+    await writeFile(path.join(project, "CLAUDE.md"), "project claude");
+    await writeFile(path.join(project, "CLAUDE.local.md"), "local claude");
+    process.env.CLAUDE_PROJECT_DIR = project;
+
+    const files = discoverConfiguredClaudeContextFiles(
+      sandbox,
       { global: false, project: true, local: true },
       path.join(root, "agent"),
     );

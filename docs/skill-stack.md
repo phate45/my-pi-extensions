@@ -1,6 +1,6 @@
 ---
 created: 2026-06-21T10:13:05
-modified: 2026-06-21T21:28:12
+modified: 2026-06-21T23:17:59
 ---
 
 # Skill Stack
@@ -37,6 +37,9 @@ Source semantics for `cc-resource-paths`:
 - `project` = `<git project root>/.claude/{commands,skills}` and falls back to `cwd` outside git
 - `global` = ancestor `.claude/{commands,skills}` directories above the resolved project root plus `~/.claude/{commands,skills}`
 - `loadInHeadless` defaults to `false` for `.claude/commands`
+
+When `CLAUDE_PROJECT_DIR` is set, the Claude project root resolves from that directory instead of Pi's `cwd`.
+This affects `.claude/commands`, `.claude/skills`, and Claude skill execution/discovery, but does not change Pi's native resource loaders.
 
 ## Invariants
 

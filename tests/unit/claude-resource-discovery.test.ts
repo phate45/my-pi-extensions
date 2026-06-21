@@ -25,6 +25,13 @@ afterEach(async () => {
 });
 
 describe("claude resource discovery", () => {
+  const originalClaudeProjectDir = process.env.CLAUDE_PROJECT_DIR;
+
+  afterEach(() => {
+    if (originalClaudeProjectDir === undefined) delete process.env.CLAUDE_PROJECT_DIR;
+    else process.env.CLAUDE_PROJECT_DIR = originalClaudeProjectDir;
+  });
+
   test("collects ancestor .claude resource dirs from leaf to root", async () => {
     const root = await makeTempDir();
     const project = path.join(root, "project");
@@ -118,5 +125,21 @@ describe("claude resource discovery", () => {
     });
 
     expect(dirs).toEqual([path.join(worktree, ".claude", "commands")]);
+  });
+
+  test("uses CLAUDE_PROJECT_DIR as the Claude discovery base instead of cwd", async () => {
+    const root = await makeTempDir();
+    const project = path.join(root, "project");
+    const sandbox = path.join(root, "sandbox", "run");
+    await mkdir(path.join(project, ".claude", "commands"), { recursive: true });
+    await mkdir(sandbox, { recursive: true });
+    process.env.CLAUDE_PROJECT_DIR = project;
+
+    const dirs = discoverClaudeResourceDirs(sandbox, "commands", {
+      includeProject: true,
+      includeGlobal: false,
+    });
+
+    expect(dirs).toEqual([path.join(project, ".claude", "commands")]);
   });
 });

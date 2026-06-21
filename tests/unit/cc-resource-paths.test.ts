@@ -30,6 +30,13 @@ afterEach(async () => {
 });
 
 describe("cc-resource-paths extension", () => {
+  const originalClaudeProjectDir = process.env.CLAUDE_PROJECT_DIR;
+
+  afterEach(() => {
+    if (originalClaudeProjectDir === undefined) delete process.env.CLAUDE_PROJECT_DIR;
+    else process.env.CLAUDE_PROJECT_DIR = originalClaudeProjectDir;
+  });
+
   test("registers a resources_discover handler when enabled", () => {
     const { pi, handlers } = createMockExtensionAPI();
 
@@ -199,6 +206,29 @@ describe("cc-resource-paths extension", () => {
       promptPaths: [path.join(project, ".claude", "commands")],
       skillPaths: [path.join(project, ".claude", "skills")],
     });
+  });
+
+  test("discovers Claude command and skill paths from CLAUDE_PROJECT_DIR instead of cwd", async () => {
+    const root = await makeTempDir();
+    const project = path.join(root, "project");
+    const sandbox = path.join(root, "sandbox", "run");
+    await mkdir(path.join(project, ".claude", "commands"), { recursive: true });
+    await mkdir(path.join(project, ".claude", "skills"), { recursive: true });
+    await mkdir(sandbox, { recursive: true });
+    process.env.CLAUDE_PROJECT_DIR = project;
+
+    const { pi, handlers } = createMockExtensionAPI();
+    ccResourcePathsExtension(pi);
+
+    const handler = handlers.get("resources_discover")?.[0];
+    const result = await handler?.({ cwd: sandbox });
+
+    expect(result?.promptPaths).toEqual(
+      expect.arrayContaining([path.join(project, ".claude", "commands")]),
+    );
+    expect(result?.skillPaths).toEqual(
+      expect.arrayContaining([path.join(project, ".claude", "skills")]),
+    );
   });
 
   test("skips registration when disabled via bundle config", () => {
