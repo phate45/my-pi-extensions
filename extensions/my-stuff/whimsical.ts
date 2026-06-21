@@ -1,5 +1,5 @@
-import type { ExtensionAPI } from "@earendil-works/pi-coding-agent";
-import { isFeatureFlagEnabled, isManagedExtensionEnabled } from "../infra/lib/bundle-config.js";
+import { isFeatureFlagEnabled } from "../infra/lib/bundle-config.js";
+import { defineManagedExtension } from "../infra/lib/managed-extension.js";
 
 const messages = [
   // Short
@@ -464,15 +464,18 @@ function pickRandom(): string {
   return messages[Math.floor(Math.random() * messages.length)];
 }
 
-export default function (pi: ExtensionAPI) {
-  if (!isManagedExtensionEnabled("whimsical", "myStuff")) return;
-  if (isFeatureFlagEnabled("headless")) return;
+export default defineManagedExtension({
+  name: "whimsical",
+  featureFlag: "myStuff",
+  setup(pi) {
+    if (isFeatureFlagEnabled("headless")) return;
 
-  pi.on("turn_start", async (_event, ctx) => {
-    ctx.ui.setWorkingMessage(pickRandom());
-  });
+    pi.on("turn_start", async (_event, ctx) => {
+      ctx.ui.setWorkingMessage(pickRandom());
+    });
 
-  pi.on("turn_end", async (_event, ctx) => {
-    ctx.ui.setWorkingMessage(); // Reset for next time
-  });
-}
+    pi.on("turn_end", async (_event, ctx) => {
+      ctx.ui.setWorkingMessage(); // Reset for next time
+    });
+  },
+});

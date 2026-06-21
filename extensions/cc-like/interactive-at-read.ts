@@ -1,9 +1,10 @@
 import os from "node:os";
 import path from "node:path";
 import type { ImageContent } from "@earendil-works/pi-ai";
-import { createReadToolDefinition, getMarkdownTheme, type ExtensionAPI } from "@earendil-works/pi-coding-agent";
+import { createReadToolDefinition, getMarkdownTheme } from "@earendil-works/pi-coding-agent";
 import { Markdown } from "@earendil-works/pi-tui";
-import { isFeatureFlagEnabled, isManagedExtensionEnabled } from "../infra/lib/bundle-config.js";
+import { isFeatureFlagEnabled } from "../infra/lib/bundle-config.js";
+import { defineManagedExtension } from "../infra/lib/managed-extension.js";
 
 type FileRef = {
   path: string;
@@ -120,68 +121,71 @@ function extractImages(blocks: Array<TextBlock | ImageBlock>): ImageContent[] {
     }));
 }
 
-export default function interactiveAtRead(pi: ExtensionAPI) {
-  if (!isManagedExtensionEnabled("interactive-at-read", "ccLike")) return;
-  if (isFeatureFlagEnabled("headless")) return;
+export default defineManagedExtension({
+  name: "interactive-at-read",
+  featureFlag: "ccLike",
+  setup(pi) {
+    if (isFeatureFlagEnabled("headless")) return;
 
-  pi.registerMessageRenderer<ReadMarkerDetails>(MESSAGE_TYPE, (message, _options, _theme) => {
-    const markdown = message.details?.markdown;
-    if (!markdown) return undefined;
-    return new Markdown(markdown, 0, 0, getMarkdownTheme());
-  });
+    pi.registerMessageRenderer<ReadMarkerDetails>(MESSAGE_TYPE, (message, _options, _theme) => {
+      const markdown = message.details?.markdown;
+      if (!markdown) return undefined;
+      return new Markdown(markdown, 0, 0, getMarkdownTheme());
+    });
 
-  pi.on("input", async (event, ctx) => {
-    if (ctx.mode !== "tui") return { action: "continue" as const };
-    if (event.source === "extension") return { action: "continue" as const };
-    if (!event.text.includes("@")) return { action: "continue" as const };
+    pi.on("input", async (event, ctx) => {
+      if (ctx.mode !== "tui") return { action: "continue" as const };
+      if (event.source === "extension") return { action: "continue" as const };
+      if (!event.text.includes("@")) return { action: "continue" as const };
 
-    const refs = dedupeFileRefs(extractFileRefs(event.text), ctx.cwd);
-    if (refs.length === 0) return { action: "continue" as const };
+      const refs = dedupeFileRefs(extractFileRefs(event.text), ctx.cwd);
+      if (refs.length === 0) return { action: "continue" as const };
 
-    const readTool = createReadToolDefinition(ctx.cwd);
-    const readSections: string[] = [];
-    const readImages: ImageContent[] = [];
-    const markerPaths: string[] = [];
+      const readTool = createReadToolDefinition(ctx.cwd);
+      const readSections: string[] = [];
+      const readImages: ImageContent[] = [];
+      const markerPaths: string[] = [];
 
-    for (const ref of refs) {
-      const resolvedPath = resolveForDisplay(ref.path, ctx.cwd);
-      markerPaths.push(displayPath(ref.path, ctx.cwd));
+      for (const ref of refs) {
+        const resolvedPath = resolveForDisplay(ref.path, ctx.cwd);
+        markerPaths.push(displayPath(ref.path, ctx.cwd));
 
-      try {
-        const result = await readTool.execute("", { path: ref.path }, ctx.signal, undefined, { model: ctx.model } as never);
-        const blocks = result.content as Array<TextBlock | ImageBlock>;
-        const text = extractText(blocks);
-        const images = extractImages(blocks);
+        try {
+          const result = await readTool.execute("", { path: ref.path }, ctx.signal, undefined, { model: ctx.model } as never);
+          const blocks = result.content as Array<TextBlock | ImageBlock>;
+          const text = extractText(blocks);
+          const images = extractImages(blocks);
 
-        if (text) {
-          readSections.push(`<read-file path="${resolvedPath}">\n${text}\n</read-file>`);
+          if (text) {
+            readSections.push(`<read-file path="${resolvedPath}">\n${text}\n</read-file>`);
+          }
+
+          readImages.push(...images);
+        } catch (error) {
+          const message = error instanceof Error ? error.message : String(error);
+          readSections.push(`<read-file path="${resolvedPath}">\n[read failed: ${message}]\n</read-file>`);
         }
-
-        readImages.push(...images);
-      } catch (error) {
-        const message = error instanceof Error ? error.message : String(error);
-        readSections.push(`<read-file path="${resolvedPath}">\n[read failed: ${message}]\n</read-file>`);
       }
-    }
 
-    const hiddenText = `<attached-read-results>\n${readSections.join("\n\n")}\n</attached-read-results>`;
-    const hiddenContent = [{ type: "text", text: hiddenText } as const, ...readImages];
-    const marker = `  └ _[Read: ${markerPaths.join(", ")}]_`;
+      const hiddenText = `<attached-read-results>\n${readSections.join("\n\n")}\n</attached-read-results>`;
+      const hiddenContent = [{ type: "text", text: hiddenText } as const, ...readImages];
+      const marker = `  └ _[Read: ${markerPaths.join(", ")}]_`;
 
-    pi.sendMessage(
-      {
-        customType: MESSAGE_TYPE,
-        content: hiddenContent,
-        display: true,
-        details: { markdown: marker },
-      },
-      { deliverAs: "nextTurn" },
-    );
+      pi.sendMessage(
+        {
+          customType: MESSAGE_TYPE,
+          content: hiddenContent,
+          display: true,
+          details: { markdown: marker },
+        },
+        { deliverAs: "nextTurn" },
+      );
 
-    await pi.sendUserMessage(
-      event.images && event.images.length > 0 ? ([{ type: "text", text: event.text }, ...event.images] as const) : event.text,
-    );
+      await pi.sendUserMessage(
+        event.images && event.images.length > 0 ? ([{ type: "text", text: event.text }, ...event.images] as const) : event.text,
+      );
 
-    return { action: "handled" as const };
-  });
-}
+      return { action: "handled" as const };
+    });
+  },
+});
