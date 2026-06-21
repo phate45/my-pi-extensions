@@ -13,6 +13,12 @@ export type BundleSettings = {
   extensions?: Record<string, BundleExtensionSettings>;
 };
 
+export const DEFAULT_BUNDLE_FEATURE_FLAGS = {
+  ccLike: true,
+  myStuff: true,
+  headless: false,
+} as const;
+
 const HEADLESS_MODES = new Set(["rpc", "json", "print"]);
 
 type RefreshOptions = {

@@ -1,6 +1,6 @@
 ---
 created: 2026-06-21T10:13:05
-modified: 2026-06-21T16:13:20
+modified: 2026-06-21T16:30:03
 ---
 
 # Bundle Config
@@ -141,6 +141,20 @@ Example shape:
 
 That means whole-feature disablement lives on `enabled`, while sub-feature knobs stay inside `config`.
 
+## Example config generation
+
+`just generate-config` writes `my-pi-settings.example.json` from the managed extension declarations in this package.
+
+Generation rules:
+- read entrypoints from `package.json` `pi.extensions`
+- import each entrypoint normally
+- inspect managed extension descriptors exposed by `defineManagedExtension(...)`
+- emit `enabled: true` for each managed extension
+- emit `config` from the config definition defaults when that extension declares typed config
+
+The generator does not scrape TypeScript source and does not boot a full Pi session.
+It uses the same declaration path the runtime already uses, then serializes the inspectable descriptor.
+
 ## Verification
 
 When changing this stack, verify:
@@ -148,5 +162,6 @@ When changing this stack, verify:
 - feature flags vs per-extension enablement
 - `headless` behavior in config-driven and non-TUI argv-driven cases
 - CLI override replacement behavior
+- `just generate-config` still matches the checked-in example file
 - package discovery still loads the intended entrypoints
 - integration probes still reflect effective state honestly

@@ -4,7 +4,10 @@ import {
   setBundleConfigForTests,
 } from "../../extensions/infra/lib/bundle-config.js";
 import { defineExtensionConfig } from "../../extensions/infra/lib/extension-config.js";
-import { defineManagedExtension } from "../../extensions/infra/lib/managed-extension.js";
+import {
+  defineManagedExtension,
+  getManagedExtensionDescriptor,
+} from "../../extensions/infra/lib/managed-extension.js";
 import { createMockExtensionAPI } from "../helpers/mock-extension-api.js";
 
 afterEach(() => {
@@ -12,6 +15,30 @@ afterEach(() => {
 });
 
 describe("managed extension config getter", () => {
+  test("exposes the managed extension descriptor for inspection", () => {
+    const demoConfig = defineExtensionConfig({
+      defaults: { value: "default" },
+      normalize(raw: Record<string, unknown> | undefined, defaults: { value: string }) {
+        return {
+          value: typeof raw?.value === "string" ? raw.value : defaults.value,
+        };
+      },
+    });
+
+    const extension = defineManagedExtension({
+      name: "demo",
+      featureFlag: "myStuff",
+      config: demoConfig,
+      setup() {},
+    });
+
+    expect(getManagedExtensionDescriptor(extension)).toEqual({
+      name: "demo",
+      featureFlag: "myStuff",
+      config: demoConfig,
+    });
+  });
+
   test("passes a live config getter into setup", async () => {
     const seen: string[] = [];
     const demoConfig = defineExtensionConfig({

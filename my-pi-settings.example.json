@@ -1,0 +1,77 @@
+{
+  "$schemaVersion": 1,
+  "featureFlags": {
+    "ccLike": true,
+    "myStuff": true,
+    "headless": false
+  },
+  "extensions": {
+    "abbreviations": {
+      "enabled": true,
+      "config": {
+        "entries": {}
+      }
+    },
+    "cc-context-local-files": {
+      "enabled": true
+    },
+    "cc-markdown-preprocessor": {
+      "enabled": true,
+      "config": {
+        "disableBash": false,
+        "disableIncludes": false
+      }
+    },
+    "cc-resource-paths": {
+      "enabled": true
+    },
+    "context": {
+      "enabled": true
+    },
+    "custom-header": {
+      "enabled": true
+    },
+    "fish-user-bash": {
+      "enabled": true
+    },
+    "frontmatter-timestamps": {
+      "enabled": true,
+      "config": {
+        "includePaths": [],
+        "includeExtensions": [".md", ".mdx", ".markdown"],
+        "includeTimezone": false
+      }
+    },
+    "git-context": {
+      "enabled": true
+    },
+    "interactive-at-read": {
+      "enabled": true
+    },
+    "skill-prompts": {
+      "enabled": true
+    },
+    "skill-tool": {
+      "enabled": true
+    },
+    "system-prompt-markdown-preprocessor": {
+      "enabled": true
+    },
+    "tps-tracker": {
+      "enabled": true
+    },
+    "web-research": {
+      "enabled": true,
+      "config": {
+        "defaultDepth": "fast",
+        "defaultFreshness": "cached"
+      }
+    },
+    "whimsical": {
+      "enabled": true
+    },
+    "yeet": {
+      "enabled": true
+    }
+  }
+}

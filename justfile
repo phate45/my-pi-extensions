@@ -42,6 +42,10 @@ lint:
 lint-ci:
     bun x biome ci . --linter-enabled=false --assist-enabled=false
 
+# Generate the checked-in example bundle config.
+generate-config:
+    bun run scripts/generate-config-example.ts
+
 # Run all tests.
 test:
     bun test
