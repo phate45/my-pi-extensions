@@ -11,7 +11,7 @@ Work logs live at: `~/Documents/second-brain/01_Projects/my-pi-extensions/logs/Y
 
 Today's log status:
 
-! day=$(date +%F); file="$HOME/Documents/second-brain/01_Projects/my-pi-extensions/logs/$day.md"; if [ -f "$file" ]; then printf 'exists: %s\n' "$file"; else printf 'missing: %s\n' "$file"; fi
+! day=$(date +%F); file="$HOME/Documents/second-brain/01_Projects/my-pi-extensions/logs/$day.md"; if [ -f "$file" ]; then printf 'exists: %s\n\n' "$file"; printf 'tail -5:\n'; tail -n 5 "$file"; else printf 'missing: %s\n' "$file"; fi
 
 ## Writing Style
 
