@@ -14,6 +14,12 @@ export type ManagedConfiguredExtensionOptions<TConfig> = {
   setup: (pi: ExtensionAPI, config: TConfig) => unknown;
 };
 
+function hasConfig<TConfig>(
+  options: ManagedExtensionOptions | ManagedConfiguredExtensionOptions<TConfig>,
+): options is ManagedConfiguredExtensionOptions<TConfig> {
+  return "getConfig" in options;
+}
+
 export function defineManagedExtension(
   options: ManagedExtensionOptions,
 ): (pi: ExtensionAPI) => unknown;
@@ -26,7 +32,7 @@ export function defineManagedExtension<TConfig>(
   return function managedExtension(pi: ExtensionAPI) {
     if (!isManagedExtensionEnabled(options.name, options.featureFlag)) return;
 
-    if (!("getConfig" in options) || !options.getConfig) {
+    if (!hasConfig(options)) {
       return options.setup(pi);
     }
 

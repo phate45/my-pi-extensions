@@ -4,6 +4,8 @@ import type {
   ToolResultEvent,
 } from "@earendil-works/pi-coding-agent";
 import { readFileSync } from "node:fs";
+import { defineManagedExtension } from "../infra/lib/managed-extension.js";
+import { maybeRealpath } from "./lib/cc-context.js";
 import { expandClaudeMarkdownResource } from "./lib/claude-markdown-expansion.js";
 import { parseShellLikeArgs } from "./lib/cli-args.js";
 import {
@@ -11,8 +13,6 @@ import {
   normalizeReadPath,
   splitFrontmatter,
 } from "./lib/markdown-preprocess.js";
-import { maybeRealpath } from "./lib/cc-context.js";
-import { isManagedExtensionEnabled } from "../infra/lib/bundle-config.js";
 
 function stripFrontmatter(raw: string): string {
   const { body } = splitFrontmatter(raw);
@@ -71,58 +71,60 @@ async function expandPromptTemplate(
   return await expandClaudeMarkdownResource(substituted, commandPath, ctx, pi);
 }
 
-export default function claudeMarkdownPreprocessor(pi: ExtensionAPI) {
-  if (!isManagedExtensionEnabled("cc-markdown-preprocessor", "ccLike")) return;
+export default defineManagedExtension({
+  name: "cc-markdown-preprocessor",
+  featureFlag: "ccLike",
+  setup(pi: ExtensionAPI) {
+    pi.on("input", async (event, ctx) => {
+      const parsed = parseCommandLine(event.text);
+      if (!parsed) return { action: "continue" as const };
 
-  pi.on("input", async (event, ctx) => {
-    const parsed = parseCommandLine(event.text);
-    if (!parsed) return { action: "continue" as const };
+      if (parsed.name.startsWith("skill:")) return { action: "continue" as const };
 
-    if (parsed.name.startsWith("skill:")) return { action: "continue" as const };
+      const command = pi.getCommands().find((c) => c.name === parsed.name);
+      if (!command) return { action: "continue" as const };
 
-    const command = pi.getCommands().find((c) => c.name === parsed.name);
-    if (!command) return { action: "continue" as const };
-
-    try {
-      if (command.source === "prompt") {
-        const expanded = await expandPromptTemplate(
-          command.sourceInfo.path,
-          parsed.args,
-          parsed.argsText,
-          ctx,
-          pi,
+      try {
+        if (command.source === "prompt") {
+          const expanded = await expandPromptTemplate(
+            command.sourceInfo.path,
+            parsed.args,
+            parsed.argsText,
+            ctx,
+            pi,
+          );
+          return { action: "transform" as const, text: expanded, images: event.images };
+        }
+      } catch (error) {
+        ctx.ui.notify(
+          `Claude preprocess failed: ${error instanceof Error ? error.message : String(error)}`,
+          "warning",
         );
-        return { action: "transform" as const, text: expanded, images: event.images };
       }
-    } catch (error) {
-      ctx.ui.notify(
-        `Claude preprocess failed: ${error instanceof Error ? error.message : String(error)}`,
-        "warning",
-      );
-    }
 
-    return { action: "continue" as const };
-  });
+      return { action: "continue" as const };
+    });
 
-  pi.on("tool_result", async (event: ToolResultEvent, ctx: ExtensionContext) => {
-    if ((event as { toolName?: string }).toolName !== "read") return;
-    if ((event as { isError?: boolean }).isError) return;
+    pi.on("tool_result", async (event: ToolResultEvent, ctx: ExtensionContext) => {
+      if ((event as { toolName?: string }).toolName !== "read") return;
+      if ((event as { isError?: boolean }).isError) return;
 
-    const input = (event as { input?: { path?: string } }).input;
-    const rawPath = input?.path;
-    if (!rawPath) return;
+      const input = (event as { input?: { path?: string } }).input;
+      const rawPath = input?.path;
+      if (!rawPath) return;
 
-    const absolutePath = normalizeReadPath(rawPath, ctx.cwd);
-    const loadedResourcePaths = getLoadedMarkdownResourcePaths(pi);
-    if (!loadedResourcePaths.has(maybeRealpath(absolutePath))) return;
+      const absolutePath = normalizeReadPath(rawPath, ctx.cwd);
+      const loadedResourcePaths = getLoadedMarkdownResourcePaths(pi);
+      if (!loadedResourcePaths.has(maybeRealpath(absolutePath))) return;
 
-    const original = extractTextContent((event as { content?: unknown }).content);
-    if (original === null) return;
+      const original = extractTextContent((event as { content?: unknown }).content);
+      if (original === null) return;
 
-    const processed = await expandClaudeMarkdownResource(original, absolutePath, ctx, pi);
+      const processed = await expandClaudeMarkdownResource(original, absolutePath, ctx, pi);
 
-    return {
-      content: [{ type: "text" as const, text: processed }],
-    };
-  });
-}
+      return {
+        content: [{ type: "text" as const, text: processed }],
+      };
+    });
+  },
+});
