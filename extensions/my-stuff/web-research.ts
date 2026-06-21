@@ -3,9 +3,11 @@ import { mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import { spawn } from "node:child_process";
+import { type ExtensionAPI } from "@earendil-works/pi-coding-agent";
 import { defineManagedExtension } from "../infra/lib/managed-extension.js";
 import {
   getWebResearchConfig,
+  type WebResearchConfig,
   type WebResearchDepth,
   type WebResearchFreshness,
 } from "./lib/web-research-config.js";
@@ -217,7 +219,7 @@ export default defineManagedExtension({
   name: "web-research",
   featureFlag: "myStuff",
   getConfig: getWebResearchConfig,
-  setup(pi, config) {
+  setup(pi: ExtensionAPI, getConfig: () => WebResearchConfig) {
     pi.registerTool({
       name: "web_research",
       label: "Web Research",
@@ -233,6 +235,7 @@ export default defineManagedExtension({
       parameters: toolSchema,
 
       async execute(_toolCallId, params: ToolParams, signal, onUpdate) {
+        const config = getConfig();
         const depth = params.depth ?? config.defaultDepth;
         const freshness = params.freshness ?? config.defaultFreshness;
         const model = DEPTH_MODEL[depth];

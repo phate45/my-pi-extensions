@@ -147,6 +147,53 @@ describe("frontmatter-timestamps extension", () => {
     expect(content).toMatch(/modified: \d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}[+-]\d{2}:\d{2}/);
   });
 
+  test("reads config at handler runtime instead of capturing setup-time values", async () => {
+    const notePath = path.join(tempDir, "RuntimeConfig.md");
+    await writeFile(
+      notePath,
+      [
+        "---",
+        "created: 2026-06-21T10:00:00",
+        "modified: 2026-06-21T10:00:00",
+        "---",
+        "",
+        "hello",
+      ].join("\n"),
+      "utf8",
+    );
+
+    const { pi, handlers } = createMockExtensionAPI();
+    frontmatterTimestampsExtension(pi);
+
+    setBundleConfigForTests({
+      extensions: {
+        "frontmatter-timestamps": {
+          config: {
+            includeTimezone: true,
+          },
+        },
+      },
+    });
+
+    const handler = handlers.get("tool_result")?.[0];
+    await handler(
+      {
+        isError: false,
+        toolName: "write",
+        input: { path: notePath },
+      },
+      {
+        hasUI: false,
+        sessionManager: {
+          getCwd: () => tempDir,
+        },
+      },
+    );
+
+    const content = await readFile(notePath, "utf8");
+    expect(content).toMatch(/modified: \d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}[+-]\d{2}:\d{2}/);
+  });
+
   test("ignores non-markdown files by default", async () => {
     const filePath = path.join(tempDir, "config.json");
     const original = '{\n  "hello": true\n}\n';

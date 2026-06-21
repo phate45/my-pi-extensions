@@ -157,11 +157,12 @@ export default defineManagedExtension({
   name: "frontmatter-timestamps",
   featureFlag: "myStuff",
   getConfig: getFrontmatterTimestampsConfig,
-  setup(pi: ExtensionAPI, config) {
+  setup(pi: ExtensionAPI, getConfig: () => FrontmatterTimestampsConfig) {
     pi.on("tool_result", async (event, ctx) => {
       if (event.isError) return;
       if (event.toolName !== "write" && event.toolName !== "edit") return;
 
+      const config = getConfig();
       const cwd = ctx.sessionManager.getCwd() ?? process.cwd();
       const paths = collectPaths(event.toolName, event.input as ToolInput);
       if (paths.length === 0) return;

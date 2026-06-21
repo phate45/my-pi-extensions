@@ -1,6 +1,6 @@
 ---
 created: 2026-06-21T10:13:05
-modified: 2026-06-21T10:57:10
+modified: 2026-06-21T13:47:37
 ---
 
 # Bundle Config
@@ -73,8 +73,16 @@ Use the config-backed form when the extension needs typed config.
 
 The wrapper should stay thin:
 - gate by feature flag + per-extension enablement
-- optionally hand normalized config into `setup(...)`
+- optionally hand a typed config getter into `setup(...)`
 - nothing fancier
+
+Important timing rule:
+- `getConfig` is a live getter, not a startup snapshot
+- global or CLI-override config is available during extension factory setup
+- trusted project-local config is only merged on `session_start`
+- therefore, any behavior that must honor trusted local config should call the getter at runtime inside handlers, commands, or tool execution rather than caching config at factory time
+
+That avoids the worst flavor of surprise: loaded extension, correct local config file, absolutely nothing happens because the extension captured pre-trust config once and called it a day.
 
 ## Typed config helpers
 

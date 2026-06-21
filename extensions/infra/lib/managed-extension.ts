@@ -11,7 +11,7 @@ export type ManagedConfiguredExtensionOptions<TConfig> = {
   name: string;
   featureFlag?: string;
   getConfig: () => TConfig;
-  setup: (pi: ExtensionAPI, config: TConfig) => unknown;
+  setup: (pi: ExtensionAPI, getConfig: () => TConfig) => unknown;
 };
 
 function hasConfig<TConfig>(
@@ -29,6 +29,10 @@ export function defineManagedExtension<TConfig>(
 export function defineManagedExtension<TConfig>(
   options: ManagedExtensionOptions | ManagedConfiguredExtensionOptions<TConfig>,
 ) {
+  // Config-backed extensions receive a live getter instead of a startup snapshot.
+  // Global and CLI-override config exists during extension load, but trusted
+  // project-local config only merges on session_start after trust resolves.
+  // Handlers that must honor local config should call getConfig() at runtime.
   return function managedExtension(pi: ExtensionAPI) {
     if (!isManagedExtensionEnabled(options.name, options.featureFlag)) return;
 
@@ -36,7 +40,6 @@ export function defineManagedExtension<TConfig>(
       return options.setup(pi);
     }
 
-    const config = options.getConfig();
-    return options.setup(pi, config);
+    return options.setup(pi, options.getConfig);
   };
 }
