@@ -42,6 +42,17 @@ Mental model:
 - extension enablement = one concrete entrypoint
 - extension config = typed local settings for that feature
 
+Current notable feature flags:
+- `ccLike` for Claude-compat behavior
+- `myStuff` for personal extensions
+- `headless` for user-facing UI fluff that should stay out of non-TUI runs
+
+`headless` has one special rule: the effective flag is true when either:
+- bundle config sets `featureFlags.headless: true`, or
+- Pi starts in a non-TUI mode such as `-p`, `--mode json`, or `--mode rpc`
+
+That auto-application is argv-derived, not `ctx.mode`-derived. Factory-time extension gating runs before any handler has a `ctx`, so the resolver cannot depend on runtime context that does not exist yet.
+
 ## Managed entrypoints
 
 Managed entrypoints use the shared wrapper from `infra`.
@@ -69,6 +80,7 @@ Good pattern:
 When changing this stack, verify:
 - preload vs trusted-local timing
 - feature flags vs per-extension enablement
+- `headless` behavior in config-driven and non-TUI argv-driven cases
 - CLI override replacement behavior
 - package discovery still loads the intended entrypoints
 - integration probes still reflect effective state honestly

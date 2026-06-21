@@ -5,12 +5,15 @@
  * TPS statistics at the end of each agent run.
  */
 
+import { isFeatureFlagEnabled } from "../infra/lib/bundle-config.js";
 import { defineManagedExtension } from "../infra/lib/managed-extension.js";
 
 export default defineManagedExtension({
   name: "tps-tracker",
   featureFlag: "myStuff",
   setup(pi) {
+    if (isFeatureFlagEnabled("headless")) return;
+
     let messageStart: number | null = null;
     let streamStart: number | null = null;
     let estimatedStreamedTokens = 0;

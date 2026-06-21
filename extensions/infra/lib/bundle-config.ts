@@ -19,6 +19,8 @@ export type ClaudeMarkdownExpansionConfig = {
   disableIncludes?: boolean;
 };
 
+const HEADLESS_MODES = new Set(["rpc", "json", "print"]);
+
 type RefreshOptions = {
   cwd: string;
   isProjectTrusted: boolean;
@@ -71,6 +73,31 @@ function getOverridePathFromArgv(argv: string[]): string | undefined {
     if (arg.startsWith("--my-pi-settings=")) return arg.slice("--my-pi-settings=".length);
   }
   return undefined;
+}
+
+export function isHeadlessModeArgv(argv: string[]) {
+  for (let index = 0; index < argv.length; index++) {
+    const arg = argv[index];
+    if (!arg) continue;
+
+    if (arg === "-p" || arg === "--print") return true;
+
+    if (arg === "--mode") {
+      const mode = argv[index + 1];
+      return mode ? HEADLESS_MODES.has(mode) : false;
+    }
+
+    if (arg.startsWith("--mode=")) {
+      return HEADLESS_MODES.has(arg.slice("--mode=".length));
+    }
+  }
+
+  return false;
+}
+
+function isHeadlessFeatureEnabled() {
+  const state = getState();
+  return state.settings.featureFlags?.headless === true || isHeadlessModeArgv(process.argv.slice(2));
 }
 
 function preloadBundleConfigFromProcess(): BundleConfigState {
@@ -228,6 +255,8 @@ export function isBundleConfigInitialized() {
 }
 
 export function isFeatureFlagEnabled(name: string) {
+  if (name === "headless") return isHeadlessFeatureEnabled();
+
   const state = getState();
   return state.settings.featureFlags?.[name] ?? true;
 }

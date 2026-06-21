@@ -10,7 +10,7 @@ import {
 import { getLoadedExtensionsSnapshot } from "../../extensions/cc-like/lib/runtime-loaded-extensions.js";
 
 const CHECKS = {
-  featureFlags: ["ccLike", "myStuff", "experimental", "contextUx", "skillTooling"],
+  featureFlags: ["ccLike", "myStuff", "experimental", "contextUx", "skillTooling", "headless"],
   extensions: ["git-context", "custom-header", "interactive-at-read", "web-research", "whimsical", "yeet"],
 } as const;
 

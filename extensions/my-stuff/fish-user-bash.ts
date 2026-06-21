@@ -3,6 +3,7 @@ import { existsSync } from "node:fs";
 import { homedir } from "node:os";
 import { join } from "node:path";
 import { createLocalBashOperations } from "@earendil-works/pi-coding-agent";
+import { isFeatureFlagEnabled } from "../infra/lib/bundle-config.js";
 import { defineManagedExtension } from "../infra/lib/managed-extension.js";
 
 function shellQuote(value: string) {
@@ -28,6 +29,8 @@ export default defineManagedExtension({
   name: "fish-user-bash",
   featureFlag: "myStuff",
   setup(pi) {
+    if (isFeatureFlagEnabled("headless")) return;
+
     const local = createLocalBashOperations();
 
     pi.on("user_bash", () => {

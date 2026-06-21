@@ -149,4 +149,21 @@ describe("extension state integration", () => {
     expect(state.effective.featureFlags.myStuff).toBe(false);
     expect(state.tools).not.toContain("web_research");
   });
+
+  test("headless feature flag disables user-facing fluff while keeping extensions loaded", async () => {
+    const env = await setupEnv();
+    await writeJson(path.join(env.agentDir, "my-pi-settings.json"), {
+      featureFlags: {
+        headless: true,
+      },
+    });
+
+    const state = await runPiAndCaptureState({ env });
+
+    expect(state.loadedExtensions.some((entry) => entry.path.includes("extensions/cc-like/context.ts"))).toBe(true);
+    expect(state.loadedExtensions.some((entry) => entry.path.includes("extensions/my-stuff/yeet.ts"))).toBe(true);
+    expect(state.effective.featureFlags.headless).toBe(true);
+    expect(state.commands).not.toContain("context");
+    expect(state.commands).not.toContain("yeet");
+  });
 });

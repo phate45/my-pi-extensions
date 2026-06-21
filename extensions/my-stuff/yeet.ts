@@ -1,3 +1,4 @@
+import { isFeatureFlagEnabled } from "../infra/lib/bundle-config.js";
 import { defineManagedExtension } from "../infra/lib/managed-extension.js";
 
 const YEET_PROMPT = `Commit and push the current repository changes.
@@ -20,6 +21,8 @@ export default defineManagedExtension({
   name: "yeet",
   featureFlag: "myStuff",
   setup(pi) {
+    if (isFeatureFlagEnabled("headless")) return;
+
     pi.registerCommand("yeet", {
       description: "Add, commit, and push the current repo changes",
       handler: async (args, ctx) => {

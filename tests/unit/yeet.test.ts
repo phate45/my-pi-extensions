@@ -44,4 +44,20 @@ describe("yeet extension", () => {
 
     expect(commands).toEqual([]);
   });
+
+  test("skips registration when headless is enabled", () => {
+    const { pi, commands } = createMockExtensionAPI();
+    setBundleConfigForTests({
+      featureFlags: {
+        headless: true,
+      },
+      extensions: {
+        yeet: { enabled: true },
+      },
+    });
+
+    yeetExtension(pi);
+
+    expect(commands).toEqual([]);
+  });
 });

@@ -6,6 +6,7 @@ import {
   getClaudeMarkdownExpansionConfig,
   getBundleConfigSources,
   getExtConfig,
+  isHeadlessModeArgv,
   isClaudeMarkdownInterpolationDisabled,
   isBundleConfigInitialized,
   isExtensionEnabled,
@@ -13,11 +14,13 @@ import {
   isManagedExtensionEnabled,
   refreshBundleConfig,
   resetBundleConfigForTests,
+  setBundleConfigForTests,
   takeBundleConfigErrors,
 } from "../../extensions/infra/lib/bundle-config.js";
 
 const tempDirs: string[] = [];
 const originalAgentDir = process.env.PI_CODING_AGENT_DIR;
+const originalArgv = [...process.argv];
 
 async function makeTempDir() {
   const dir = await mkdtemp(path.join(os.tmpdir(), "bundle-config-test-"));
@@ -33,6 +36,7 @@ async function writeJson(filePath: string, value: unknown) {
 afterEach(async () => {
   resetBundleConfigForTests();
   process.env.PI_CODING_AGENT_DIR = originalAgentDir;
+  process.argv = [...originalArgv];
   while (tempDirs.length > 0) {
     const dir = tempDirs.pop();
     if (!dir) continue;
@@ -161,6 +165,32 @@ describe("bundle-config", () => {
     expect(isManagedExtensionEnabled("custom-header", "ccLike")).toBe(false);
     expect(isManagedExtensionEnabled("web-research", "myStuff")).toBe(false);
     expect(isManagedExtensionEnabled("fish-user-bash", "myStuff")).toBe(true);
+  });
+
+  test("headless mode detection matches non-tui argv modes", () => {
+    expect(isHeadlessModeArgv([])).toBe(false);
+    expect(isHeadlessModeArgv(["-p"])).toBe(true);
+    expect(isHeadlessModeArgv(["--print"])).toBe(true);
+    expect(isHeadlessModeArgv(["--mode", "rpc"])).toBe(true);
+    expect(isHeadlessModeArgv(["--mode", "json"])).toBe(true);
+    expect(isHeadlessModeArgv(["--mode=json"])).toBe(true);
+    expect(isHeadlessModeArgv(["--mode", "tui"])).toBe(false);
+  });
+
+  test("headless feature flag auto-enables in non-tui modes", () => {
+    process.argv = [process.argv[0] ?? "node", process.argv[1] ?? "test", "--mode", "rpc"];
+
+    expect(isFeatureFlagEnabled("headless")).toBe(true);
+  });
+
+  test("headless feature flag can be enabled from bundle config", () => {
+    setBundleConfigForTests({
+      featureFlags: {
+        headless: true,
+      },
+    });
+
+    expect(isFeatureFlagEnabled("headless")).toBe(true);
   });
 
   test("markdown interpolation disable knob defaults off and can be enabled via config", async () => {

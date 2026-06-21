@@ -44,4 +44,20 @@ describe("fish-user-bash extension", () => {
 
     expect([...handlers.keys()]).toEqual([]);
   });
+
+  test("skips registration when headless is enabled", () => {
+    const { pi, handlers } = createMockExtensionAPI();
+    setBundleConfigForTests({
+      featureFlags: {
+        headless: true,
+      },
+      extensions: {
+        "fish-user-bash": { enabled: true },
+      },
+    });
+
+    fishUserBashExtension(pi);
+
+    expect([...handlers.keys()]).toEqual([]);
+  });
 });

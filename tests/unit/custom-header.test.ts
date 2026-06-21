@@ -47,4 +47,20 @@ describe("custom-header extension", () => {
 
     expect([...handlers.keys()]).toEqual([]);
   });
+
+  test("skips registration when headless is enabled", () => {
+    const { pi, handlers } = createMockExtensionAPI();
+    setBundleConfigForTests({
+      featureFlags: {
+        headless: true,
+      },
+      extensions: {
+        "custom-header": { enabled: true },
+      },
+    });
+
+    customHeaderExtension(pi);
+
+    expect([...handlers.keys()]).toEqual([]);
+  });
 });

@@ -48,4 +48,20 @@ describe("tps-tracker extension", () => {
 
     expect([...handlers.keys()]).toEqual([]);
   });
+
+  test("skips registration when headless is enabled", () => {
+    const { pi, handlers } = createMockExtensionAPI();
+    setBundleConfigForTests({
+      featureFlags: {
+        headless: true,
+      },
+      extensions: {
+        "tps-tracker": { enabled: true },
+      },
+    });
+
+    tpsTrackerExtension(pi);
+
+    expect([...handlers.keys()]).toEqual([]);
+  });
 });
