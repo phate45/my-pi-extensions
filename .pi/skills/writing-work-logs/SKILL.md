@@ -99,4 +99,8 @@ Current timestamp:
 ! date '+%A, %Y-%m-%dT%H:%M:%S'
 ```
 
-Use what's written above, don't call `date` again; never placeholders like `00:00:00`.
+### Updating timestamps
+
+- For a new daily log file, set both `created` and `modified` to the timestamp shown above.
+- The frontmatter timestamp extension owns `modified` updates for tracked files; don't hand-roll a replacement timestamp when that path is active.
+- Use what's written above, don't call `date` again; never placeholders like `00:00:00`.

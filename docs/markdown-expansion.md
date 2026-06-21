@@ -1,3 +1,8 @@
+---
+created: 2026-06-21T10:13:05
+modified: 2026-06-21T10:57:10
+---
+
 # Markdown Expansion
 
 ## Purpose

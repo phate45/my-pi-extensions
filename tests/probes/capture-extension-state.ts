@@ -15,6 +15,7 @@ const CHECKS = {
     "git-context",
     "custom-header",
     "interactive-at-read",
+    "frontmatter-timestamps",
     "web-research",
     "whimsical",
     "yeet",

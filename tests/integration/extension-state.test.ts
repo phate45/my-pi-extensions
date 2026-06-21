@@ -36,9 +36,13 @@ describe("extension state integration", () => {
     expect(loadedPaths.some((entry) => entry.includes("extensions/my-stuff/web-research.ts"))).toBe(
       true,
     );
+    expect(
+      loadedPaths.some((entry) => entry.includes("extensions/my-stuff/frontmatter-timestamps.ts")),
+    ).toBe(true);
 
     expect(state.effective.extensions["git-context"]).toBe(true);
     expect(state.effective.extensions["custom-header"]).toBe(true);
+    expect(state.effective.extensions["frontmatter-timestamps"]).toBe(true);
     expect(state.effective.extensions["web-research"]).toBe(true);
     expect(state.errors).toEqual([]);
   });
