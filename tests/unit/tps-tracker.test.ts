@@ -56,7 +56,9 @@ describe("tps-tracker extension", () => {
 
     expect(notifyCalls).toEqual([
       {
-        message: "✓ N/A  0 tokens in 0.0s streaming  [2026-06-21 12:34:56]",
+        message: `✓ N/A  0 tokens in 0.0s streaming  [${new Date(Date.UTC(2026, 5, 21, 12, 34, 56))
+          .toLocaleString("sv-SE", { hour12: false })
+          .replace(",", "")}]`,
         level: "info",
       },
     ]);

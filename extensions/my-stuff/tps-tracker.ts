@@ -7,10 +7,10 @@
 
 import { isFeatureFlagEnabled } from "../infra/lib/bundle-config.js";
 import { defineManagedExtension } from "../infra/lib/managed-extension.js";
+import { formatLocalDateTime } from "./lib/local-iso.js";
 
 function formatCompletionTimestamp(timestamp: number): string {
-  const iso = new Date(timestamp).toISOString();
-  return iso.slice(0, 19).replace("T", " ");
+  return formatLocalDateTime(new Date(timestamp), " ");
 }
 
 export default defineManagedExtension({

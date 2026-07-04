@@ -7,38 +7,13 @@ import {
   frontmatterTimestampsConfig,
   type FrontmatterTimestampsConfig,
 } from "./lib/frontmatter-timestamps-config.js";
+import { formatLocalDateTime, formatLocalDateTimeWithOffset } from "./lib/local-iso.js";
 
 type ToolInput = {
   path?: string;
   multi?: Array<{ path?: string }>;
   patch?: string;
 };
-
-function toIsoWithOffset(date = new Date()): string {
-  const pad = (n: number) => String(Math.trunc(Math.abs(n))).padStart(2, "0");
-  const year = date.getFullYear();
-  const month = pad(date.getMonth() + 1);
-  const day = pad(date.getDate());
-  const hours = pad(date.getHours());
-  const minutes = pad(date.getMinutes());
-  const seconds = pad(date.getSeconds());
-  const offsetMinutes = -date.getTimezoneOffset();
-  const sign = offsetMinutes >= 0 ? "+" : "-";
-  const offsetHours = pad(offsetMinutes / 60);
-  const offsetRemainder = pad(offsetMinutes % 60);
-  return `${year}-${month}-${day}T${hours}:${minutes}:${seconds}${sign}${offsetHours}:${offsetRemainder}`;
-}
-
-function toIsoLocal(date = new Date()): string {
-  const pad = (n: number) => String(Math.trunc(Math.abs(n))).padStart(2, "0");
-  const year = date.getFullYear();
-  const month = pad(date.getMonth() + 1);
-  const day = pad(date.getDate());
-  const hours = pad(date.getHours());
-  const minutes = pad(date.getMinutes());
-  const seconds = pad(date.getSeconds());
-  return `${year}-${month}-${day}T${hours}:${minutes}:${seconds}`;
-}
 
 function extractPathsFromPatch(patchText?: string): string[] {
   if (!patchText) return [];
@@ -138,7 +113,10 @@ async function updateFrontmatterTimestamp(
 
     const frontmatterBody = match[1];
     const frontmatterStart = match[0].slice(0, match[0].length - (match[2]?.length ?? 0));
-    const newTimestamp = config.includeTimezone ? toIsoWithOffset() : toIsoLocal();
+    const now = new Date();
+    const newTimestamp = config.includeTimezone
+      ? formatLocalDateTimeWithOffset(now)
+      : formatLocalDateTime(now);
 
     const nextBody = /^modified:\s*.+$/m.test(frontmatterBody)
       ? frontmatterBody.replace(/^modified:\s*.+$/m, `modified: ${newTimestamp}`)
