@@ -125,6 +125,48 @@ export function renderErrorBlock(subject: string, error: unknown): string {
   ].join("\n");
 }
 
+function normalizeBangCommand(rawCommand: string): string {
+  const command = rawCommand.trim();
+  const backtickWrapped = command.match(/^`([\s\S]*)`$/);
+  return backtickWrapped ? backtickWrapped[1].trim() : command;
+}
+
+function matchBangFenceOpen(line: string): { marker: string } | null {
+  const match = line.match(/^(`{3,}|~{3,})!\s*$/);
+  return match ? { marker: match[1] } : null;
+}
+
+function isFenceClose(line: string, marker: string): boolean {
+  const trimmed = line.trim();
+  if (!trimmed.startsWith(marker[0])) return false;
+  if (trimmed.length < marker.length) return false;
+  return [...trimmed].every((char) => char === marker[0]);
+}
+
+async function expandCommandLine(
+  command: string,
+  originalLines: string[],
+  out: string[],
+  hooks: MarkdownPreprocessHooks,
+): Promise<void> {
+  if (!command) {
+    out.push(...originalLines);
+    return;
+  }
+  if (hooks.shouldExpandCommand?.(command) === false) {
+    out.push(...originalLines);
+    return;
+  }
+
+  try {
+    const result = await hooks.exec(command);
+    const rendered = hooks.renderCommand(command, result);
+    if (rendered !== null) out.push(rendered);
+  } catch (error) {
+    out.push(renderErrorBlock(`command: ${command}`, error));
+  }
+}
+
 export async function preprocessMarkdown(
   raw: string,
   resourcePath: string,
@@ -136,25 +178,38 @@ export async function preprocessMarkdown(
   const lines = body.split("\n");
   const out: string[] = [];
 
-  for (const line of lines) {
-    if (line.startsWith("!")) {
-      const command = line.slice(1).trim();
-      if (!command) {
-        out.push(line);
-        continue;
+  for (let index = 0; index < lines.length; index++) {
+    const line = lines[index];
+    const bangFence = matchBangFenceOpen(line);
+    if (bangFence) {
+      const bodyLines: string[] = [];
+      let closeIndex = -1;
+      for (let lookahead = index + 1; lookahead < lines.length; lookahead++) {
+        if (isFenceClose(lines[lookahead], bangFence.marker)) {
+          closeIndex = lookahead;
+          break;
+        }
+        bodyLines.push(lines[lookahead]);
       }
-      if (hooks.shouldExpandCommand?.(command) === false) {
+
+      if (closeIndex === -1) {
         out.push(line);
         continue;
       }
 
-      try {
-        const result = await hooks.exec(command);
-        const rendered = hooks.renderCommand(command, result);
-        if (rendered !== null) out.push(rendered);
-      } catch (error) {
-        out.push(renderErrorBlock(`command: ${command}`, error));
-      }
+      await expandCommandLine(
+        bodyLines.join("\n").trim(),
+        lines.slice(index, closeIndex + 1),
+        out,
+        hooks,
+      );
+      index = closeIndex;
+      continue;
+    }
+
+    if (line.startsWith("!")) {
+      const command = normalizeBangCommand(line.slice(1));
+      await expandCommandLine(command, [line], out, hooks);
       continue;
     }
 
