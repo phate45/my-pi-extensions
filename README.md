@@ -13,15 +13,16 @@ It exists so Pi customization lives in one repo instead of leaking across `~/.pi
 ## What this package does
 
 - loads managed Pi extensions from multiple extension families
-- supports bundle-level feature flags and per-extension config
-- provides Claude-style `.claude/commands` and `.claude/skills` compatibility; with a custom `Skill` tool
+- composes Claude-compatible behavior behind one explicitly ordered Pi entrypoint
+- preserves bundle-level feature flags and per-extension config across composed extensions
+- provides Claude-style `.claude/commands` and `.claude/skills` compatibility with a custom `Skill` tool
 - integrates with Pi's native skill stack
 - includes a generated example bundle config and test coverage for extension behavior
 
 ## Layout
 
 - `extensions/infra/` — shared bundle infrastructure, config bootstrap, managed extension helpers, and input pipeline wiring
-- `extensions/cc-like/` — Claude Code-like behavior for skills, prompts, context loading, markdown expansion, and invocation UX
+- `extensions/cc-like/` — Claude Code-like behavior composed in ascending filename order by `index.ts`
 - `extensions/my-stuff/` — personal extensions, tools, and experiments
 - `themes/` — theme files
 - `docs/` — middle-layer architecture and subsystem docs
@@ -39,6 +40,8 @@ Useful entry points:
 - `docs/bundle-config.md` — bundle config behavior, precedence, and runtime timing notes
 
 ## Development
+
+The development dependency graph pins Pi's core packages to `0.82.1`. Runtime package peers use Pi's bundled core modules.
 
 Common commands:
 - `just test`

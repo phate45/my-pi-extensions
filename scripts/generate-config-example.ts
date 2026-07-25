@@ -2,7 +2,7 @@ import path from "node:path";
 import { pathToFileURL } from "node:url";
 import { DEFAULT_BUNDLE_FEATURE_FLAGS } from "../extensions/infra/lib/bundle-config.js";
 import {
-  getManagedExtensionDescriptor,
+  getManagedExtensionDescriptors,
   type ManagedExtensionDescriptor,
 } from "../extensions/infra/lib/managed-extension.js";
 
@@ -44,21 +44,22 @@ export async function loadManagedExtensionDescriptors(
 
   for (const entryPath of entryPaths) {
     const module = (await import(pathToFileURL(entryPath).href)) as { default?: unknown };
-    const descriptor = getManagedExtensionDescriptor(module.default);
-    if (!descriptor) continue;
+    const entryDescriptors = getManagedExtensionDescriptors(module.default);
 
-    if (descriptor.config?.key && descriptor.config.key !== descriptor.name) {
-      throw new Error(
-        `Managed extension ${descriptor.name} uses config key ${descriptor.config.key}, which generate-config does not support yet`,
-      );
+    for (const descriptor of entryDescriptors) {
+      if (descriptor.config?.key && descriptor.config.key !== descriptor.name) {
+        throw new Error(
+          `Managed extension ${descriptor.name} uses config key ${descriptor.config.key}, which generate-config does not support yet`,
+        );
+      }
+
+      if (seenNames.has(descriptor.name)) {
+        throw new Error(`Duplicate managed extension name: ${descriptor.name}`);
+      }
+
+      seenNames.add(descriptor.name);
+      descriptors.push(descriptor);
     }
-
-    if (seenNames.has(descriptor.name)) {
-      throw new Error(`Duplicate managed extension name: ${descriptor.name}`);
-    }
-
-    seenNames.add(descriptor.name);
-    descriptors.push(descriptor);
   }
 
   return descriptors.sort((a, b) => a.name.localeCompare(b.name));

@@ -130,10 +130,12 @@ Check:
 - whether the new file should be matched by existing globs
 - whether a helper file accidentally became discoverable as an entrypoint
 
-This bundle currently uses top-level globs for:
-- `extensions/infra/*.ts`
-- `extensions/cc-like/*.ts`
-- `extensions/my-stuff/*.ts`
+This bundle currently uses:
+- `extensions/infra/*.ts` for shared bundle entrypoints
+- `extensions/cc-like/index.ts` as the ordered composite Claude-compatible entrypoint
+- `extensions/my-stuff/*.ts` for personal entrypoints
+
+When changing the Claude-compatible stack, preserve the explicit composition order in `extensions/cc-like/index.ts` and keep every child managed descriptor visible to config generation.
 
 Completion criterion: Pi will discover the intended entrypoints and ignore helper files.
 

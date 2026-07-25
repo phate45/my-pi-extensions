@@ -26,7 +26,7 @@ It keeps Pi extensions, themes, and Claude-compat behavior under version control
 - `tests/` — unit and integration coverage
 - `docs/` — middle-level technical orientation
 
-`package.json` exposes extension entrypoints from `extensions/infra/*.ts`, `extensions/cc-like/*.ts`, and `extensions/my-stuff/*.ts`.
+`package.json` exposes infra and personal entrypoints from `extensions/infra/*.ts` and `extensions/my-stuff/*.ts`. Claude-compatible behavior composes behind the single `extensions/cc-like/index.ts` entrypoint.
 
 ## Pi Docs Source of Truth
 

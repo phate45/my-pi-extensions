@@ -1,6 +1,6 @@
 ---
 created: 2026-06-21T10:13:05
-modified: 2026-06-21T23:23:50
+modified: 2026-07-25T23:46:11
 ---
 
 # Bundle Config
@@ -67,6 +67,7 @@ Most notably:
 ## Managed entrypoints
 
 Managed entrypoints use the shared wrapper from `infra`.
+The Claude-compatible package entrypoint composes several managed child factories in an explicit order. The composite exposes every child descriptor, so per-extension enablement, typed config defaults, and generated example config remain independent even though Pi loads one entrypoint.
 
 Use the config-less form when the extension only needs enablement.
 Use the config-backed form when the extension needs typed config.
@@ -187,7 +188,8 @@ Environment override:
 Generation rules:
 - read entrypoints from `package.json` `pi.extensions`
 - import each entrypoint normally
-- inspect managed extension descriptors exposed by `defineManagedExtension(...)`
+- inspect managed extension descriptors exposed by `defineManagedExtension(...)` or an ordered composite
+- flatten composite descriptors while rejecting duplicate managed extension names
 - emit `enabled: true` for each managed extension
 - emit `config` from the config definition defaults when that extension declares typed config
 

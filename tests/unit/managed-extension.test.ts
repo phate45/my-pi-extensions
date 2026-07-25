@@ -5,8 +5,10 @@ import {
 } from "../../extensions/infra/lib/bundle-config.js";
 import { defineExtensionConfig } from "../../extensions/infra/lib/extension-config.js";
 import {
+  composeManagedExtensions,
   defineManagedExtension,
   getManagedExtensionDescriptor,
+  getManagedExtensionDescriptors,
 } from "../../extensions/infra/lib/managed-extension.js";
 import { createMockExtensionAPI } from "../helpers/mock-extension-api.js";
 
@@ -37,6 +39,32 @@ describe("managed extension config getter", () => {
       featureFlag: "myStuff",
       config: demoConfig,
     });
+  });
+
+  test("composes managed extensions in declared order and exposes every descriptor", async () => {
+    const setupOrder: string[] = [];
+    const first = defineManagedExtension({
+      name: "first",
+      setup() {
+        setupOrder.push("first");
+      },
+    });
+    const second = defineManagedExtension({
+      name: "second",
+      setup() {
+        setupOrder.push("second");
+      },
+    });
+
+    const extension = composeManagedExtensions([first, second]);
+    const { pi } = createMockExtensionAPI();
+    await extension(pi);
+
+    expect(setupOrder).toEqual(["first", "second"]);
+    expect(getManagedExtensionDescriptors(extension).map((descriptor) => descriptor.name)).toEqual([
+      "first",
+      "second",
+    ]);
   });
 
   test("passes a live config getter into setup", async () => {

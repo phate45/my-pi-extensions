@@ -1,6 +1,6 @@
 ---
 created: 2026-06-21T10:13:05
-modified: 2026-06-21T16:13:47
+modified: 2026-07-25T23:46:11
 ---
 
 # Architecture
@@ -29,6 +29,7 @@ Keep this layer generic.
 Claude Code-like Pi behavior.
 
 Owns:
+- the single ordered `index.ts` entrypoint for all Claude-compatible behavior
 - `.claude` resource discovery
 - markdown expansion
 - context loading and reporting
@@ -56,5 +57,6 @@ The repo prefers:
 - explicit ownership
 - tests before implementation when behavior changes
 - direct entrypoints over framework sludge
+- explicit composition order over package-glob ordering when middleware interdependencies matter
 
 If an abstraction hides when Pi registers hooks, commands, or tools, it is too clever.

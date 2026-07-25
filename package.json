@@ -9,7 +9,7 @@
   "pi": {
     "extensions": [
       "./extensions/infra/*.ts",
-      "./extensions/cc-like/*.ts",
+      "./extensions/cc-like/index.ts",
       "./extensions/my-stuff/*.ts"
     ],
     "themes": [

@@ -9,9 +9,11 @@ export type ManagedExtensionDescriptor = {
 };
 
 export const managedExtensionDescriptorSymbol = Symbol.for("my-pi.managedExtensionDescriptor");
+export const managedExtensionDescriptorsSymbol = Symbol.for("my-pi.managedExtensionDescriptors");
 
 export type ManagedExtensionFactory = ((pi: ExtensionAPI) => unknown) & {
   [managedExtensionDescriptorSymbol]?: ManagedExtensionDescriptor;
+  [managedExtensionDescriptorsSymbol]?: readonly ManagedExtensionDescriptor[];
 };
 
 export type ManagedExtensionOptions = {
@@ -72,4 +74,44 @@ export function getManagedExtensionDescriptor(
 ): ManagedExtensionDescriptor | undefined {
   if (typeof value !== "function") return undefined;
   return (value as ManagedExtensionFactory)[managedExtensionDescriptorSymbol];
+}
+
+export function getManagedExtensionDescriptors(value: unknown): ManagedExtensionDescriptor[] {
+  if (typeof value !== "function") return [];
+
+  const extension = value as ManagedExtensionFactory;
+  const descriptors = extension[managedExtensionDescriptorsSymbol];
+  if (descriptors) return [...descriptors];
+
+  const descriptor = getManagedExtensionDescriptor(extension);
+  return descriptor ? [descriptor] : [];
+}
+
+export function composeManagedExtensions(
+  extensions: readonly ManagedExtensionFactory[],
+): ManagedExtensionFactory {
+  const descriptors = extensions.flatMap((extension, index) => {
+    const childDescriptors = getManagedExtensionDescriptors(extension);
+    if (childDescriptors.length === 0) {
+      throw new Error(`Managed extension at index ${index} has no descriptor`);
+    }
+    return childDescriptors;
+  });
+
+  const seenNames = new Set<string>();
+  for (const descriptor of descriptors) {
+    if (seenNames.has(descriptor.name)) {
+      throw new Error(`Duplicate managed extension name: ${descriptor.name}`);
+    }
+    seenNames.add(descriptor.name);
+  }
+
+  const composed: ManagedExtensionFactory = async function composedManagedExtensions(pi) {
+    for (const extension of extensions) {
+      await extension(pi);
+    }
+  };
+
+  composed[managedExtensionDescriptorsSymbol] = descriptors;
+  return composed;
 }
