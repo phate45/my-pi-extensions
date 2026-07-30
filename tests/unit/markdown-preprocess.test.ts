@@ -24,14 +24,19 @@ describe("markdown preprocess command rendering", () => {
 describe("markdown preprocess Claude bash syntax", () => {
   test("executes backtick-wrapped bang commands without shell command substitution", async () => {
     const commands: string[] = [];
-    const expanded = await preprocessMarkdown("before\n!`echo hi`\nafter", "/tmp/prompt.md", "/tmp", {
-      exec: async (command) => {
-        commands.push(command);
-        return { stdout: "hi\n", stderr: "", code: 0 };
+    const expanded = await preprocessMarkdown(
+      "before\n!`echo hi`\nafter",
+      "/tmp/prompt.md",
+      "/tmp",
+      {
+        exec: async (command) => {
+          commands.push(command);
+          return { stdout: "hi\n", stderr: "", code: 0 };
+        },
+        renderCommand: (_command, result) => result.stdout.trimEnd(),
+        renderFile: () => null,
       },
-      renderCommand: (_command, result) => result.stdout.trimEnd(),
-      renderFile: () => null,
-    });
+    );
 
     expect(commands).toEqual(["echo hi"]);
     expect(expanded).toBe("before\nhi\nafter");

@@ -45,10 +45,11 @@ lint-ci:
 # Generate the checked-in example bundle config.
 generate-config:
     bun run scripts/generate-config-example.ts
+    bun x biome format my-pi-settings.example.json --write
 
-# Run all tests.
+# Run all project tests.
 test:
-    bun test
+    bun test tests
 
 # Run unit tests only.
 test-unit:

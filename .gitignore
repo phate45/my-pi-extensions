@@ -11,4 +11,5 @@ CLAUDE.local.md
 .pi/my-pi-settings.json
 
 node_modules/
+.tmp/
 
