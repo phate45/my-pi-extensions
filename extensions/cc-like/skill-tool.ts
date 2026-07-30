@@ -92,9 +92,9 @@ export default defineManagedExtension({
   name: "skill-tool",
   featureFlag: "ccLike",
   setup(pi: ExtensionAPI) {
-    if (areSkillsDisabled()) return;
-
     const registerSkillTool = () => {
+      if (areSkillsDisabled() && getSkillCommands(pi).length === 0) return;
+
       pi.registerTool({
         name: "skill",
         label: "Skill",

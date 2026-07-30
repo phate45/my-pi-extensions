@@ -90,12 +90,18 @@ describe("cc-resource-paths extension", () => {
     expect(result?.promptPaths).toBeUndefined();
   });
 
-  test("suppresses skillPaths under --no-skills while keeping command paths", async () => {
+  test("suppresses ambient skillPaths under --no-skills with an explicit skill", async () => {
     const root = await makeTempDir();
     const project = path.join(root, "project");
     await mkdir(path.join(project, ".claude", "commands"), { recursive: true });
     await mkdir(path.join(project, ".claude", "skills"), { recursive: true });
-    process.argv = [process.argv[0] ?? "node", process.argv[1] ?? "test", "--no-skills"];
+    process.argv = [
+      process.argv[0] ?? "node",
+      process.argv[1] ?? "test",
+      "--no-skills",
+      "--skill",
+      path.join(root, "explicit", "SKILL.md"),
+    ];
 
     const { pi, handlers } = createMockExtensionAPI();
     ccResourcePathsExtension(pi);

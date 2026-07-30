@@ -1,6 +1,6 @@
 ---
 created: 2026-06-21T10:13:05
-modified: 2026-06-21T23:17:59
+modified: 2026-07-30T21:37:06
 ---
 
 # Skill Stack
@@ -26,7 +26,9 @@ Current entrypoint split:
 - `infra/input-pipeline.ts` owns the shared `input` event so transforms such as abbreviations can run before Claude command routing without cross-family imports
 
 Mode interaction:
-- Pi `--no-skills|-ns` disables native skill discovery and the model-facing `skill` tool
+- Pi `--no-skills|-ns` disables ambient native skill discovery, including `.claude/skills` contributed by this bundle
+- explicit `--skill <path>` entries still load; when at least one valid explicit skill is available, `skill-tool.ts` exposes only Pi's loaded explicit skills through the model-facing `skill` tool
+- `--no-skills|-ns` without a valid explicit skill keeps the model-facing `skill` tool disabled
 - in interactive runs, Claude-style human invocation still works through `skill-prompts.ts`
 - in effective headless mode, that human invocation layer stays off as well
 - bundle config can independently gate Claude resource sources:
@@ -64,6 +66,9 @@ Do not infer it from a broader command base directory.
 
 After changes, confirm:
 - `.claude/skills` discovery still works
+- `--no-skills` alone leaves no model-facing `skill` tool
+- repeated explicit `--skill <path>` entries remain available to the model-facing tool under `--no-skills`
+- ambient `.claude/skills` do not leak into the model-facing skill list or execution path in explicit-only mode
 - disabled global/project Claude resource sources stop contributing paths
 - `.claude/commands` still load, but run through the invocation pipeline instead of inline prompt expansion
 - `.claude/commands` render as compact invocation rows in the UI instead of visible inline XML payloads

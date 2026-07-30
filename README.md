@@ -39,6 +39,18 @@ Useful entry points:
 - `my-pi-settings.example.json` — generated example config from managed extension declarations
 - `docs/bundle-config.md` — bundle config behavior, precedence, and runtime timing notes
 
+## Curated skill mode
+
+Wrappers can give a Pi agent a persona-specific skill set without leaking ambient global, project, or `.claude/skills` resources:
+
+```bash
+pi --no-skills \
+  --skill /path/to/persona-skill-one/SKILL.md \
+  --skill /path/to/persona-skill-two/SKILL.md
+```
+
+`--no-skills` disables ambient discovery, while repeated explicit `--skill` entries remain available through the custom model-facing `skill` tool and its Claude markdown preprocessing. If Pi loads no valid explicit skills, the model-facing tool stays disabled.
+
 ## Development
 
 The development dependency graph pins Pi's core packages to `0.82.1`. Runtime package peers use Pi's bundled core modules.

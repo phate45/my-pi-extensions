@@ -1,6 +1,6 @@
 ---
 created: 2026-06-21T10:13:05
-modified: 2026-07-25T23:46:11
+modified: 2026-07-30T21:37:06
 ---
 
 # Bundle Config
@@ -60,7 +60,9 @@ That auto-application is argv-derived, not `ctx.mode`-derived. Factory-time exte
 
 Related Pi CLI switches also affect bundle behavior even though they are not bundle config keys.
 Most notably:
-- `--no-skills` / `-ns` disables native Pi skill discovery and the model-facing `skill` tool
+- `--no-skills` / `-ns` disables ambient native Pi skill discovery, including `.claude/skills` contributed by this bundle
+- repeated explicit `--skill <path>` entries still load and enable the model-facing `skill` tool when Pi exposes at least one valid loaded skill
+- `--no-skills` / `-ns` without a valid explicit skill leaves the model-facing `skill` tool disabled
 - this bundle still keeps Claude-style human invocation available in interactive runs via `skill-prompts.ts`
 - in effective headless mode, that human invocation layer stays off too
 
