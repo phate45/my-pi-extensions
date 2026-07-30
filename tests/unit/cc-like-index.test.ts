@@ -7,6 +7,7 @@ const EXPECTED_EXTENSION_ORDER = [
   "cc-context-local-files",
   "cc-markdown-preprocessor",
   "cc-resource-paths",
+  "claude-rules",
   "context",
   "custom-header",
   "git-context",

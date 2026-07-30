@@ -1,8 +1,8 @@
 import { afterEach, describe, expect, test } from "bun:test";
-import { mkdtemp, mkdir, rm } from "node:fs/promises";
+import { execFileSync } from "node:child_process";
+import { mkdir, mkdtemp, rm } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
-import { execFileSync } from "node:child_process";
 import { discoverClaudeResourceDirs } from "../../extensions/cc-like/lib/claude-resource-discovery.js";
 import { resetProjectRootCacheForTests } from "../../extensions/cc-like/lib/git-project-root.js";
 
@@ -125,6 +125,22 @@ describe("claude resource discovery", () => {
     });
 
     expect(dirs).toEqual([path.join(worktree, ".claude", "commands")]);
+  });
+
+  test("discovers rule directories through the same project-root logic", async () => {
+    const root = await makeTempDir();
+    const project = path.join(root, "project");
+    const nested = path.join(project, "src");
+    await mkdir(path.join(project, ".claude", "rules"), { recursive: true });
+    await mkdir(nested, { recursive: true });
+    execFileSync("git", ["init", project], { stdio: "ignore" });
+
+    expect(
+      discoverClaudeResourceDirs(nested, "rules", {
+        includeProject: true,
+        includeGlobal: false,
+      }),
+    ).toEqual([path.join(project, ".claude", "rules")]);
   });
 
   test("uses CLAUDE_PROJECT_DIR as the Claude discovery base instead of cwd", async () => {

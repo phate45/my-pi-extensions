@@ -3,7 +3,7 @@ import os from "node:os";
 import path from "node:path";
 import { resolveProjectRoot } from "./git-project-root.js";
 
-export type ClaudeResourceKind = "commands" | "skills";
+export type ClaudeResourceKind = "commands" | "rules" | "skills";
 
 export type ClaudeResourceDiscoveryOptions = {
   includeProject?: boolean;

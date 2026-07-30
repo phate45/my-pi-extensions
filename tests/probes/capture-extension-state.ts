@@ -1,5 +1,6 @@
 import { writeFile } from "node:fs/promises";
 import type { ExtensionAPI } from "@earendil-works/pi-coding-agent";
+import { getLoadedExtensionsSnapshot } from "../../extensions/cc-like/lib/runtime-loaded-extensions.js";
 import {
   getBundleConfig,
   getBundleConfigSources,
@@ -7,11 +8,11 @@ import {
   isFeatureFlagEnabled,
   takeBundleConfigErrors,
 } from "../../extensions/infra/lib/bundle-config.js";
-import { getLoadedExtensionsSnapshot } from "../../extensions/cc-like/lib/runtime-loaded-extensions.js";
 
 const CHECKS = {
   featureFlags: ["ccLike", "myStuff", "experimental", "contextUx", "skillTooling", "headless"],
   extensions: [
+    "claude-rules",
     "git-context",
     "custom-header",
     "interactive-at-read",

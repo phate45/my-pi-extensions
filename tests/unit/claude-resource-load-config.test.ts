@@ -2,8 +2,10 @@ import { describe, expect, test } from "bun:test";
 import {
   DEFAULT_CC_CONTEXT_LOCAL_FILES_CONFIG,
   DEFAULT_CC_RESOURCE_PATHS_CONFIG,
+  DEFAULT_CLAUDE_RULES_CONFIG,
   normalizeCcContextLocalFilesConfig,
   normalizeCcResourcePathsConfig,
+  normalizeClaudeRulesConfig,
 } from "../../extensions/cc-like/lib/claude-resource-load-config.js";
 
 describe("claude resource load config", () => {
@@ -32,6 +34,14 @@ describe("claude resource load config", () => {
 
   test("uses defaults for missing resource path config", () => {
     expect(normalizeCcResourcePathsConfig(undefined)).toEqual(DEFAULT_CC_RESOURCE_PATHS_CONFIG);
+  });
+
+  test("uses defaults and normalizes Claude rule source overrides", () => {
+    expect(normalizeClaudeRulesConfig(undefined)).toEqual(DEFAULT_CLAUDE_RULES_CONFIG);
+    expect(normalizeClaudeRulesConfig({ global: false })).toEqual({
+      global: false,
+      project: true,
+    });
   });
 
   test("normalizes command and skill source overrides", () => {

@@ -24,6 +24,8 @@ export type CcResourcePathsConfig = {
   skills: ClaudeResourceSourceConfig;
 };
 
+export type ClaudeRulesConfig = ClaudeResourceSourceConfig;
+
 export const DEFAULT_CLAUDE_FILE_SOURCE_CONFIG: ClaudeFileSourceConfig = {
   global: true,
   project: true,
@@ -48,6 +50,8 @@ export const DEFAULT_CC_RESOURCE_PATHS_CONFIG: CcResourcePathsConfig = {
   commands: DEFAULT_CLAUDE_COMMAND_SOURCE_CONFIG,
   skills: DEFAULT_CLAUDE_RESOURCE_SOURCE_CONFIG,
 };
+
+export const DEFAULT_CLAUDE_RULES_CONFIG: ClaudeRulesConfig = DEFAULT_CLAUDE_RESOURCE_SOURCE_CONFIG;
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
@@ -110,6 +114,13 @@ export function normalizeCcResourcePathsConfig(
   };
 }
 
+export function normalizeClaudeRulesConfig(
+  raw: Record<string, unknown> | undefined,
+  defaults: ClaudeRulesConfig = DEFAULT_CLAUDE_RULES_CONFIG,
+): ClaudeRulesConfig {
+  return normalizeClaudeResourceSourceConfig(raw, defaults);
+}
+
 export const ccContextLocalFilesConfig = defineExtensionConfig({
   defaults: DEFAULT_CC_CONTEXT_LOCAL_FILES_CONFIG,
   normalize: normalizeCcContextLocalFilesConfig,
@@ -118,6 +129,11 @@ export const ccContextLocalFilesConfig = defineExtensionConfig({
 export const ccResourcePathsConfig = defineExtensionConfig({
   defaults: DEFAULT_CC_RESOURCE_PATHS_CONFIG,
   normalize: normalizeCcResourcePathsConfig,
+});
+
+export const claudeRulesConfig = defineExtensionConfig({
+  defaults: DEFAULT_CLAUDE_RULES_CONFIG,
+  normalize: normalizeClaudeRulesConfig,
 });
 
 export function getCcContextLocalFilesConfig(): CcContextLocalFilesConfig {

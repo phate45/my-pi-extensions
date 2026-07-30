@@ -49,6 +49,7 @@ Start here when the work touches one of these stacks:
 - context loading and `/context` behavior → `docs/context-stack.md`
 - markdown expansion and prompt preprocessing → `docs/markdown-expansion.md`
 - skills and skill-tool behavior → `docs/skill-stack.md`
+- `.claude/rules` discovery and activation → `docs/rules-stack.md`
 - system prompt preprocessing → `docs/system-prompt.md`
 - web research tool behavior → `docs/web-research.md`
 

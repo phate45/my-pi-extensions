@@ -15,7 +15,7 @@ It exists so Pi customization lives in one repo instead of leaking across `~/.pi
 - loads managed Pi extensions from multiple extension families
 - composes Claude-compatible behavior behind one explicitly ordered Pi entrypoint
 - preserves bundle-level feature flags and per-extension config across composed extensions
-- provides Claude-style `.claude/commands` and `.claude/skills` compatibility with a custom `Skill` tool
+- provides Claude-style `.claude/commands`, `.claude/skills`, and path-scoped `.claude/rules` compatibility with a custom `Skill` tool
 - integrates with Pi's native skill stack
 - includes a generated example bundle config and test coverage for extension behavior
 
@@ -70,6 +70,7 @@ Common commands:
 - `docs/context-stack.md`
 - `docs/markdown-expansion.md`
 - `docs/skill-stack.md`
+- `docs/rules-stack.md`
 - `docs/system-prompt.md`
 - `docs/web-research.md`
 

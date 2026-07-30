@@ -1,7 +1,7 @@
 import { afterEach, describe, expect, test } from "bun:test";
 import path from "node:path";
-import { createTempPiEnv, writeJson, type TempPiEnv } from "../helpers/temp-env.js";
 import { buildAgentSettings, runPiAndCaptureState } from "../helpers/run-pi.js";
+import { createTempPiEnv, type TempPiEnv, writeJson } from "../helpers/temp-env.js";
 
 const tempEnvs: TempPiEnv[] = [];
 
@@ -42,6 +42,7 @@ describe("extension state integration", () => {
     ).toBe(true);
 
     expect(state.effective.extensions["git-context"]).toBe(true);
+    expect(state.effective.extensions["claude-rules"]).toBe(true);
     expect(state.effective.extensions["custom-header"]).toBe(true);
     expect(state.effective.extensions["frontmatter-timestamps"]).toBe(true);
     expect(state.effective.extensions["web-research"]).toBe(true);

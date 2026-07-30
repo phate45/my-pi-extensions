@@ -27,6 +27,7 @@ describe("generate-config example", () => {
       "cc-context-local-files",
       "cc-markdown-preprocessor",
       "cc-resource-paths",
+      "claude-rules",
       "context",
       "custom-header",
       "git-context",

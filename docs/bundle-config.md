@@ -1,6 +1,6 @@
 ---
 created: 2026-06-21T10:13:05
-modified: 2026-07-30T21:37:06
+modified: 2026-07-30T22:32:49
 ---
 
 # Bundle Config
@@ -177,10 +177,12 @@ For Claude resource loading, the current knobs are:
 - `cc-resource-paths.config.commands.loadInHeadless` → whether `.claude/commands` load in effective headless mode
 - `cc-resource-paths.config.skills.project` → `<git project root>/.claude/skills` and falls back to `cwd` outside git
 - `cc-resource-paths.config.skills.global` → ancestor `.claude/skills` directories above the resolved project root plus `~/.claude/skills`
+- `claude-rules.config.project` → `<git project root>/.claude/rules` and falls back to `cwd` outside git
+- `claude-rules.config.global` → ancestor `.claude/rules` directories above the resolved project root plus `~/.claude/rules`
 
 Environment override:
 - `CLAUDE_PROJECT_DIR` replaces Pi's `cwd` as the starting point for Claude-family project discovery in this bundle
-- it affects Claude project root resolution, `CLAUDE*.md`, `.claude/commands`, `.claude/skills`, and the `git-context` system-prompt block
+- it affects Claude project root resolution, `CLAUDE*.md`, `.claude/commands`, `.claude/skills`, `.claude/rules`, and the `git-context` system-prompt block
 - it does not change Pi's native context, settings, prompt, or skill discovery outside this Claude-compat layer
 
 ## Example config generation

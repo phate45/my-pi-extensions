@@ -1,6 +1,6 @@
 ---
 created: 2026-06-21T10:13:05
-modified: 2026-07-25T23:46:11
+modified: 2026-07-30T22:32:49
 ---
 
 # Architecture
@@ -30,7 +30,8 @@ Claude Code-like Pi behavior.
 
 Owns:
 - the single ordered `index.ts` entrypoint for all Claude-compatible behavior
-- `.claude` resource discovery
+- `.claude` resource and rule discovery
+- eager and path-scoped rule activation
 - markdown expansion
 - context loading and reporting
 - skill execution, Claude command invocation, compact invocation rendering, and prompt shims

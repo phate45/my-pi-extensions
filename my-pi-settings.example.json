@@ -43,6 +43,13 @@
         }
       }
     },
+    "claude-rules": {
+      "enabled": true,
+      "config": {
+        "global": true,
+        "project": true
+      }
+    },
     "context": {
       "enabled": true
     },
