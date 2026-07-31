@@ -1,6 +1,6 @@
+import { readFileSync } from "node:fs";
 import os from "node:os";
 import path from "node:path";
-import { readFileSync } from "node:fs";
 import type { ExtensionAPI, ExtensionContext, SourceInfo } from "@earendil-works/pi-coding-agent";
 import { discoverEffectiveContextFiles, getAgentDir } from "./cc-context.js";
 import {
@@ -95,9 +95,8 @@ function sortNames(names: Iterable<string>): string[] {
   return [...new Set(names)].sort((a, b) => a.localeCompare(b));
 }
 
-export function listLoadedExtensions(cwd: string): string[] {
+export function formatLoadedExtensions(extensions: LoadedExtension[], cwd: string): string[] {
   const agentDir = getAgentDir();
-  const extensions = getLoadedExtensionsSnapshot();
   if (extensions.length === 0) return ["  (none)"];
 
   const lines: string[] = [];
@@ -117,7 +116,7 @@ export function listLoadedExtensions(cwd: string): string[] {
       source === "local"
         ? `[${groupKeyForProjectLocal(extension, cwd)}]`
         : `[${getLocationLabel(extension, cwd, agentDir)}]`;
-    const name = displayExtensionName(extension.path);
+    const name = `${displayExtensionName(extension.path)}${extension.hidden ? " [H]" : ""}`;
 
     let subgroupMap = sourceGroups.get(source);
     if (!subgroupMap) {
@@ -150,6 +149,10 @@ export function listLoadedExtensions(cwd: string): string[] {
   }
 
   return lines;
+}
+
+export function listLoadedExtensions(cwd: string): string[] {
+  return formatLoadedExtensions(getLoadedExtensionsSnapshot(), cwd);
 }
 
 export function loadEffectiveContextFiles(cwd: string): EffectiveContextFile[] {

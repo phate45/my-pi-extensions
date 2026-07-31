@@ -1,12 +1,13 @@
+import { spawn } from "node:child_process";
 import { readFile } from "node:fs/promises";
 import path from "node:path";
-import { spawn } from "node:child_process";
 import type { TempPiEnv } from "./temp-env.js";
 
 export type CapturedExtensionState = {
   loadedExtensions: Array<{
     path: string;
     resolvedPath: string;
+    hidden?: boolean;
     sourceInfo: unknown;
   }>;
   bundleConfig: unknown;

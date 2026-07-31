@@ -1,8 +1,9 @@
-import { ExtensionRunner, type Extension, type SourceInfo } from "@earendil-works/pi-coding-agent";
+import { type Extension, ExtensionRunner, type SourceInfo } from "@earendil-works/pi-coding-agent";
 
 type LoadedExtensionSnapshot = {
   path: string;
   resolvedPath: string;
+  hidden?: boolean;
   sourceInfo: SourceInfo;
 };
 
@@ -20,6 +21,7 @@ function snapshotExtensions(extensions: Extension[]): LoadedExtensionSnapshot[] 
   return extensions.map((extension) => ({
     path: extension.path,
     resolvedPath: extension.resolvedPath,
+    hidden: extension.hidden,
     sourceInfo: extension.sourceInfo,
   }));
 }
