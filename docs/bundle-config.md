@@ -1,6 +1,6 @@
 ---
 created: 2026-06-21T10:13:05
-modified: 2026-07-30T22:32:49
+modified: 2026-08-09T14:39:39
 ---
 
 # Bundle Config
@@ -175,7 +175,7 @@ For Claude resource loading, the current knobs are:
 - `cc-resource-paths.config.commands.project` → `<git project root>/.claude/commands` and falls back to `cwd` outside git
 - `cc-resource-paths.config.commands.global` → ancestor `.claude/commands` directories above the resolved project root plus `~/.claude/commands`
 - `cc-resource-paths.config.commands.loadInHeadless` → whether `.claude/commands` load in effective headless mode
-- `cc-resource-paths.config.skills.project` → `<git project root>/.claude/skills` and falls back to `cwd` outside git
+- `cc-resource-paths.config.skills.project` → `<git project root>/.claude/skills` and falls back to `cwd` outside git; also enables lazy package-local `.claude/skills` activation beneath that root
 - `cc-resource-paths.config.skills.global` → ancestor `.claude/skills` directories above the resolved project root plus `~/.claude/skills`
 - `claude-rules.config.project` → `<git project root>/.claude/rules` and falls back to `cwd` outside git
 - `claude-rules.config.global` → ancestor `.claude/rules` directories above the resolved project root plus `~/.claude/rules`

@@ -6,13 +6,7 @@ import { expandClaudeMarkdownResource } from "./claude-markdown-expansion.js";
 import { parseShellLikeArgs } from "./cli-args.js";
 import { splitFrontmatter } from "./markdown-preprocess.js";
 import { maybeRealpath } from "./cc-context.js";
-import {
-  discoverClaudeSkills,
-  expandSkill,
-  findClaudeSkill,
-  findSkill,
-  getSkillCommands,
-} from "./skill-execution.js";
+import { discoverClaudeSkills, expandSkill, getSkillsForInvocation } from "./skill-execution.js";
 
 function stripFrontmatter(raw: string): string {
   const { body } = splitFrontmatter(raw);
@@ -75,8 +69,8 @@ export async function executeSkillByName(
   options?: { useNativeSkills?: boolean },
 ) {
   const useNativeSkills = options?.useNativeSkills ?? true;
-  const skills = useNativeSkills ? getSkillCommands(pi) : discoverClaudeSkills(ctx.cwd);
-  const skill = useNativeSkills ? findSkill(pi, name) : findClaudeSkill(ctx.cwd, name);
+  const skills = getSkillsForInvocation(pi, ctx.cwd, useNativeSkills);
+  const skill = skills.find((item) => item.name === name);
   if (!skill) {
     const available = skills.map((item) => item.name).join(", ") || "none";
     return {

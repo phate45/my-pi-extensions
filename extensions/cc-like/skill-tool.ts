@@ -1,15 +1,23 @@
 import type { ExtensionAPI } from "@earendil-works/pi-coding-agent";
 import { Text } from "@earendil-works/pi-tui";
 import { Type } from "typebox";
-import { getSkillCommands, type SkillSummary } from "./lib/skill-execution.js";
+import {
+  activateClaudeSkillsForTarget,
+  getSkillCommands,
+  resetActivatedClaudeSkills,
+  type SkillSummary,
+} from "./lib/skill-execution.js";
 import { formatExpandedInvocation, formatSkillLikeInvocation } from "./lib/invocation-render.js";
 import { executeSkillByName } from "./lib/skill-invocation.js";
-import { areSkillsDisabled } from "../infra/lib/bundle-config.js";
+import { areSkillsDisabled, isExtensionEnabled } from "../infra/lib/bundle-config.js";
 import { defineManagedExtension } from "../infra/lib/managed-extension.js";
+import { getCcResourcePathsConfig } from "./lib/claude-resource-load-config.js";
 
 const skillToolSchema = Type.Object({
   name: Type.String({ description: "Name of the skill to execute/load." }),
 });
+const FILE_TOOLS = new Set(["read", "edit", "write"]);
+export const SKILL_DISCOVERY_MESSAGE_TYPE = "claude-skill-discovery";
 
 type SkillToolParams = {
   name: string;
@@ -92,8 +100,13 @@ export default defineManagedExtension({
   name: "skill-tool",
   featureFlag: "ccLike",
   setup(pi: ExtensionAPI) {
-    const registerSkillTool = () => {
-      if (areSkillsDisabled() && getSkillCommands(pi).length === 0) return;
+    let skillToolRegistered = false;
+    let initialSkills: SkillSummary[] | undefined;
+    const pendingSkills = new Map<string, SkillSummary>();
+
+    const registerSkillTool = (force = false) => {
+      if (skillToolRegistered) return;
+      if (!force && areSkillsDisabled() && getSkillCommands(pi).length === 0) return;
 
       pi.registerTool({
         name: "skill",
@@ -134,18 +147,61 @@ export default defineManagedExtension({
           return await executeSkillByName(params.name, undefined, ctx, pi);
         },
       });
+      skillToolRegistered = true;
     };
 
-    pi.on("session_start", async () => {
+    pi.on("session_start", async (_event, ctx) => {
+      resetActivatedClaudeSkills(pi);
+      pendingSkills.clear();
+      initialSkills = undefined;
       registerSkillTool();
     });
 
     pi.on("before_agent_start", async (event) => {
-      const replacement = renderSkillPromptReplacement(getSkillCommands(pi));
+      initialSkills ??= getSkillCommands(pi);
+      const replacement = renderSkillPromptReplacement(initialSkills);
       if (!replacement) return;
       return {
         systemPrompt: replacePiSkillPromptBlock(event.systemPrompt, replacement),
       };
+    });
+
+    pi.on("tool_call", (event, ctx) => {
+      if (!FILE_TOOLS.has(event.toolName)) return;
+      if (!isExtensionEnabled("cc-skill-paths") || !getCcResourcePathsConfig().skills.project) {
+        return;
+      }
+      const rawPath = (event.input as { path?: unknown }).path;
+      if (typeof rawPath !== "string") return;
+
+      for (const skill of activateClaudeSkillsForTarget(pi, ctx.cwd, rawPath)) {
+        pendingSkills.set(skill.path, skill);
+      }
+      registerSkillTool(pendingSkills.size > 0);
+    });
+
+    pi.on("turn_end", () => {
+      if (pendingSkills.size === 0) return;
+      const skills = [...pendingSkills.values()].sort((left, right) =>
+        left.name.localeCompare(right.name),
+      );
+      pendingSkills.clear();
+      pi.sendMessage(
+        {
+          customType: SKILL_DISCOVERY_MESSAGE_TYPE,
+          content: [
+            "<system-reminder>",
+            "<skill-discovery>",
+            "Newly available skills:",
+            ...skills.map((skill) => `- ${skill.name} — ${skill.description}`),
+            "</skill-discovery>",
+            "</system-reminder>",
+          ].join("\n"),
+          display: true,
+          details: { skills: skills.map((skill) => skill.name) },
+        },
+        { deliverAs: "steer" },
+      );
     });
   },
 });

@@ -1,11 +1,15 @@
 import type { ExtensionAPI, ExtensionContext } from "@earendil-works/pi-coding-agent";
 import { existsSync, readFileSync, readdirSync, statSync } from "node:fs";
 import path from "node:path";
-import { discoverClaudeSkillDirs } from "./cc-skill-discovery.js";
+import {
+  discoverClaudeSkillDirs,
+  discoverNestedClaudeSkillDirectories,
+} from "./cc-skill-discovery.js";
 import { parseShellLikeArgs } from "./cli-args.js";
 import { expandClaudeMarkdownResource } from "./claude-markdown-expansion.js";
 import { splitFrontmatter } from "./markdown-preprocess.js";
 import { maybeRealpath } from "./cc-context.js";
+import { resolveProjectRoot } from "./git-project-root.js";
 
 export type SkillMetadata = {
   name: string;
@@ -37,6 +41,8 @@ export type SkillSummary = SkillMetadata & {
 export type SkillExpansionOptions = {
   argsText?: string;
 };
+
+const activatedSkillsByApi = new WeakMap<ExtensionAPI, Map<string, SkillSummary>>();
 
 function escapeRegExp(text: string): string {
   return text.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
@@ -217,15 +223,22 @@ export function getSkillCommands(pi: ExtensionAPI): SkillSummary[] {
 function discoverSkillFilesFromDir(dir: string): string[] {
   const out: string[] = [];
   if (!existsSync(dir)) return out;
+  const visited = new Set<string>();
 
   const walk = (current: string) => {
+    const canonical = maybeRealpath(current);
+    if (visited.has(canonical)) return;
+    visited.add(canonical);
+
     const skillFile = path.join(current, "SKILL.md");
     if (existsSync(skillFile) && statSync(skillFile).isFile()) {
       out.push(skillFile);
       return;
     }
 
-    for (const entry of readdirSync(current, { withFileTypes: true })) {
+    for (const entry of readdirSync(current, { withFileTypes: true }).sort((a, b) =>
+      a.name.localeCompare(b.name),
+    )) {
       if (entry.name.startsWith(".") || entry.name === "node_modules") continue;
       const fullPath = path.join(current, entry.name);
       let isDirectory = entry.isDirectory();
@@ -272,12 +285,81 @@ export function discoverClaudeSkills(cwd: string): SkillSummary[] {
   return skills;
 }
 
-export function findSkill(pi: ExtensionAPI, name: string): SkillSummary | undefined {
-  return getSkillCommands(pi).find((skill) => skill.name === name);
+function discoverSkillsInDirectories(directories: Array<{ directory: string; scopePath: string }>) {
+  return directories.flatMap(({ directory, scopePath }) =>
+    discoverSkillFilesFromDir(directory).flatMap((skillFile) => {
+      try {
+        const document = readSkillDocument(skillFile);
+        return [
+          {
+            ...document.frontmatter.metadata,
+            name: `${scopePath}:${document.frontmatter.metadata.name}`,
+            path: skillFile,
+            baseDir: path.dirname(skillFile),
+          },
+        ];
+      } catch {
+        return [];
+      }
+    }),
+  );
 }
 
-export function findClaudeSkill(cwd: string, name: string): SkillSummary | undefined {
-  return discoverClaudeSkills(cwd).find((skill) => skill.name === name);
+export function resetActivatedClaudeSkills(pi: ExtensionAPI) {
+  activatedSkillsByApi.set(pi, new Map());
+}
+
+export function getActivatedClaudeSkills(pi: ExtensionAPI): SkillSummary[] {
+  return [...(activatedSkillsByApi.get(pi)?.values() ?? [])];
+}
+
+export function activateClaudeSkillsForTarget(
+  pi: ExtensionAPI,
+  cwd: string,
+  rawPath: string,
+): SkillSummary[] {
+  const projectRoot = resolveProjectRoot(cwd);
+  const target = extractProjectRelativePath(rawPath, cwd, projectRoot);
+  if (!target) return [];
+
+  const activated = activatedSkillsByApi.get(pi) ?? new Map<string, SkillSummary>();
+  activatedSkillsByApi.set(pi, activated);
+  const discovered = discoverSkillsInDirectories(
+    discoverNestedClaudeSkillDirectories(projectRoot, target),
+  );
+  const fresh: SkillSummary[] = [];
+  for (const skill of discovered) {
+    if (activated.has(skill.path)) continue;
+    activated.set(skill.path, skill);
+    fresh.push(skill);
+  }
+  return fresh;
+}
+
+export function getSkillsForInvocation(
+  pi: ExtensionAPI,
+  cwd: string,
+  useNativeSkills: boolean,
+): SkillSummary[] {
+  const base = useNativeSkills ? getSkillCommands(pi) : discoverClaudeSkills(cwd);
+  return [...base, ...getActivatedClaudeSkills(pi)];
+}
+
+function extractProjectRelativePath(rawPath: string, cwd: string, projectRoot: string) {
+  const withoutAt = rawPath.startsWith("@") ? rawPath.slice(1) : rawPath;
+  if (!withoutAt.trim()) return undefined;
+
+  const absolutePath = path.resolve(cwd, withoutAt);
+  const relativePath = path.relative(projectRoot, absolutePath);
+  if (
+    relativePath.length === 0 ||
+    relativePath === ".." ||
+    relativePath.startsWith(`..${path.sep}`) ||
+    path.isAbsolute(relativePath)
+  ) {
+    return undefined;
+  }
+  return relativePath.split(path.sep).join("/");
 }
 
 export async function expandSkill(

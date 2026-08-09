@@ -3,7 +3,11 @@ import { mkdtemp, mkdir, rm, writeFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import skillPromptsExtension from "../../extensions/cc-like/skill-prompts.js";
-import { resetBundleConfigForTests } from "../../extensions/infra/lib/bundle-config.js";
+import skillToolExtension from "../../extensions/cc-like/skill-tool.js";
+import {
+  resetBundleConfigForTests,
+  setBundleConfigForTests,
+} from "../../extensions/infra/lib/bundle-config.js";
 import inputPipelineExtension from "../../extensions/infra/input-pipeline.js";
 import { resetInputPipelineForTests } from "../../extensions/infra/lib/input-pipeline.js";
 import { createMockExtensionAPI } from "../helpers/mock-extension-api.js";
@@ -26,6 +30,15 @@ async function writeSkill(projectDir: string, name = "demo-skill") {
     `---\nname: ${name}\ndescription: Demo skill for testing.\n---\n\n# Demo\n\nUse this.\n`,
   );
   return skillPath;
+}
+
+async function writePackageSkill(projectDir: string, name = "deploy") {
+  const skillDir = path.join(projectDir, "packages", "api", ".claude", "skills", name);
+  await mkdir(skillDir, { recursive: true });
+  await writeFile(
+    path.join(skillDir, "SKILL.md"),
+    `---\nname: ${name}\ndescription: Deploy the API package.\n---\n\n# Deploy\n`,
+  );
 }
 
 async function writeClaudeCommand(projectDir: string, name = "demo-command") {
@@ -179,5 +192,36 @@ describe("skill-prompts extension", () => {
     expect(result).toEqual({ action: "continue" });
     expect(sentMessages).toEqual([]);
     expect(sentUserMessages).toEqual([]);
+  });
+
+  test("routes activated package skills through /skill without changing native discovery", async () => {
+    const root = await makeTempDir();
+    await writePackageSkill(root);
+    setBundleConfigForTests({
+      extensions: { "cc-resource-paths": { enabled: true, config: { skills: { project: true } } } },
+    });
+    process.argv = [process.argv[0] ?? "node", process.argv[1] ?? "test", "--no-skills"];
+
+    const { pi, handlers } = createMockExtensionAPI();
+    inputPipelineExtension(pi);
+    skillPromptsExtension(pi);
+    skillToolExtension(pi);
+    await handlers.get("session_start")?.at(-1)?.({}, { cwd: root });
+
+    await handlers.get("tool_call")?.[0]?.(
+      { toolName: "read", input: { path: "packages/api/src/service.ts" } },
+      { cwd: root },
+    );
+    const input = handlers.get("input")?.[0];
+    const result = await input?.(
+      { text: "/skill:packages/api:deploy", images: [] },
+      { cwd: root, ui: { notify() {} } },
+    );
+
+    expect(result).toEqual({
+      action: "transform",
+      images: [],
+      text: expect.stringContaining('<skill name="packages/api:deploy"'),
+    });
   });
 });

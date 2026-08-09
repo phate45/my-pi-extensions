@@ -3,7 +3,10 @@ import { mkdtemp, mkdir, rm, writeFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import skillToolExtension from "../../extensions/cc-like/skill-tool.js";
-import { resetBundleConfigForTests } from "../../extensions/infra/lib/bundle-config.js";
+import {
+  resetBundleConfigForTests,
+  setBundleConfigForTests,
+} from "../../extensions/infra/lib/bundle-config.js";
 import { createMockExtensionAPI } from "../helpers/mock-extension-api.js";
 
 const tempDirs: string[] = [];
@@ -22,6 +25,21 @@ async function writeSkill(projectDir: string, name = "demo-skill") {
   await writeFile(
     skillPath,
     `---\nname: ${name}\ndescription: Demo skill for testing.\n---\n\n# Demo\n\nUse this.\n`,
+  );
+  return skillPath;
+}
+
+async function writePackageSkill(
+  projectDir: string,
+  packageName = "packages/api",
+  name = "deploy",
+) {
+  const skillDir = path.join(projectDir, ...packageName.split("/"), ".claude", "skills", name);
+  await mkdir(skillDir, { recursive: true });
+  const skillPath = path.join(skillDir, "SKILL.md");
+  await writeFile(
+    skillPath,
+    `---\nname: ${name}\ndescription: Deploy the ${packageName} package.\n---\n\n# Deploy\n\nDeploy it.\n`,
   );
   return skillPath;
 }
@@ -176,5 +194,71 @@ describe("skill-tool extension", () => {
     );
     expect(toolResult.content[0]?.text).toContain("Skill not found: ambient-skill");
     expect(toolResult.content[0]?.text).toContain("Available skills: explicit-skill");
+  });
+
+  test("keeps the native skill inventory stable while injecting newly activated package skills", async () => {
+    const root = await makeTempDir();
+    const nativeSkillPath = await writeSkill(root, "native-skill");
+    await writePackageSkill(root);
+    setBundleConfigForTests({
+      extensions: { "cc-resource-paths": { enabled: true, config: { skills: { project: true } } } },
+    });
+    const { pi, handlers, sentMessages, tools } = createMockExtensionAPI();
+    (pi as any).getCommands = () => [{ source: "skill", sourceInfo: { path: nativeSkillPath } }];
+    skillToolExtension(pi);
+
+    await handlers.get("session_start")?.[0]?.({}, { cwd: root });
+    const beforeActivation = await handlers.get("before_agent_start")?.[0]?.({
+      systemPrompt: "base prompt",
+    });
+    (pi as any).getCommands = () => [];
+    await handlers.get("tool_call")?.[0]?.(
+      { toolName: "read", input: { path: "packages/api/src/service.ts" } },
+      { cwd: root },
+    );
+    await handlers.get("turn_end")?.[0]?.({}, {});
+    const afterActivation = await handlers.get("before_agent_start")?.[0]?.({
+      systemPrompt: "base prompt",
+    });
+
+    expect(beforeActivation?.systemPrompt).toContain("native-skill");
+    expect(afterActivation?.systemPrompt).toContain("native-skill");
+    expect(afterActivation?.systemPrompt).not.toContain("packages/api:deploy");
+    expect(JSON.stringify(sentMessages[0])).toContain("<skill-discovery>");
+    expect(JSON.stringify(sentMessages[0])).toContain("packages/api:deploy");
+
+    const toolResult = await (tools[0] as any).execute(
+      "tool-call",
+      { name: "packages/api:deploy" },
+      undefined,
+      undefined,
+      { cwd: root },
+    );
+    expect(toolResult.content[0]?.text).toContain('<skill name="packages/api:deploy"');
+    expect(toolResult.content[0]?.text).toContain("Deploy it.");
+  });
+
+  test("activates ancestor package skills without leaking sibling package skills", async () => {
+    const root = await makeTempDir();
+    await writePackageSkill(root, "packages", "shared");
+    await writePackageSkill(root, "packages/api", "deploy");
+    await writePackageSkill(root, "packages/web", "publish");
+    setBundleConfigForTests({
+      extensions: { "cc-resource-paths": { enabled: true, config: { skills: { project: true } } } },
+    });
+    const { pi, handlers, sentMessages } = createMockExtensionAPI();
+    skillToolExtension(pi);
+    await handlers.get("session_start")?.[0]?.({}, { cwd: root });
+
+    await handlers.get("tool_call")?.[0]?.(
+      { toolName: "read", input: { path: "packages/api/src/service.ts" } },
+      { cwd: root },
+    );
+    await handlers.get("turn_end")?.[0]?.({}, {});
+
+    const discovery = JSON.stringify(sentMessages[0]);
+    expect(discovery).toContain("packages:shared");
+    expect(discovery).toContain("packages/api:deploy");
+    expect(discovery).not.toContain("packages/web:publish");
   });
 });

@@ -1,6 +1,6 @@
 ---
 created: 2026-06-21T10:13:05
-modified: 2026-07-30T21:37:06
+modified: 2026-08-09T14:39:39
 ---
 
 # Skill Stack
@@ -12,7 +12,7 @@ The skill stack makes Claude-style invocation resources feel native in Pi while 
 ## Responsibilities
 
 This stack owns:
-- `.claude/skills` discovery
+- `.claude/skills` discovery, including lazy package-local skill activation
 - `.claude/commands` discovery as invocation resources, not ordinary Pi prompts
 - model-facing `skill` tool registration
 - human `/skill:name args` execution
@@ -43,6 +43,10 @@ Source semantics for `cc-resource-paths`:
 When `CLAUDE_PROJECT_DIR` is set, the Claude project root resolves from that directory instead of Pi's `cwd`.
 This affects `.claude/commands`, `.claude/skills`, and Claude skill execution/discovery, but does not change Pi's native resource loaders.
 
+Package-local `.claude/skills` directories below the project root activate lazily when `read`, `edit`, or `write` targets their subtree. Ancestor package skill directories compose while sibling package directories stay inactive. Activated skills use stable qualified names such as `packages/api:deploy`; this prevents their meaning from changing when another package provides the same frontmatter name.
+
+Pi's native skill resource loader only discovers skills at startup or reload, so lazy package skills stay in the bundle's in-memory skill registry rather than becoming native Pi skills. The `skill` tool remains one stable dispatcher and its startup skill list never changes mid-session. Each activation injects a single context message wrapped in `<system-reminder><skill-discovery>…</skill-discovery></system-reminder>`; the tool and `/skill:name` router can then resolve the newly announced qualified names.
+
 ## Invariants
 
 Keep these aligned:
@@ -70,6 +74,9 @@ After changes, confirm:
 - repeated explicit `--skill <path>` entries remain available to the model-facing tool under `--no-skills`
 - ambient `.claude/skills` do not leak into the model-facing skill list or execution path in explicit-only mode
 - disabled global/project Claude resource sources stop contributing paths
+- package-local skills activate from targeted file ancestry, compose with parents, and do not leak from siblings
+- native skill inventory and tool definition stay stable while discovery messages announce package skills
+- activated package skills resolve identically through the model-facing tool and `/skill:name`
 - `.claude/commands` still load, but run through the invocation pipeline instead of inline prompt expansion
 - `.claude/commands` render as compact invocation rows in the UI instead of visible inline XML payloads
 - transformed slash input such as abbreviation-expanded `/from-handoff ...` still reaches Claude command routing
