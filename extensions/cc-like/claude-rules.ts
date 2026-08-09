@@ -10,6 +10,8 @@ import {
   extractClaudeRuleTarget,
   ruleMatchesTarget,
 } from "./lib/claude-rules.js";
+import path from "node:path";
+import { resolveClaudeProjectDir } from "./lib/claude-project-dir.js";
 import { resolveProjectRoot } from "./lib/git-project-root.js";
 
 export const CLAUDE_RULES_MESSAGE_TYPE = "claude-rules";
@@ -24,6 +26,20 @@ type ClaudeRulesMessageDetails = {
   sources: string[];
   targets: Record<string, string[]>;
 };
+
+function extractClaudeRuleTargetForCwd(cwd: string, projectRoot: string): string | undefined {
+  const projectDir = resolveClaudeProjectDir(cwd);
+  const relativePath = path.relative(projectRoot, projectDir);
+  if (
+    relativePath.length === 0 ||
+    relativePath === ".." ||
+    relativePath.startsWith(`..${path.sep}`) ||
+    path.isAbsolute(relativePath)
+  ) {
+    return undefined;
+  }
+  return path.join(relativePath, ".pi-startup").split(path.sep).join("/");
+}
 
 export default defineManagedExtension({
   name: "claude-rules",
@@ -79,6 +95,28 @@ export default defineManagedExtension({
       rules = discovery.rules;
     };
 
+    const loadNestedRules = async (projectRoot: string, target: string): Promise<ClaudeRule[]> => {
+      const nestedRules: ClaudeRule[] = [];
+      const nestedDirectories = discoverNestedClaudeRuleDirectories(projectRoot, target);
+      for (const [index, nested] of nestedDirectories.entries()) {
+        const discovery = await discoverClaudeRulesInDirectories([nested.directory]);
+        for (const diagnostic of discovery.diagnostics) {
+          const key = `${diagnostic.sourceLabel}:${diagnostic.reason}`;
+          if (reportedDiagnostics.has(key)) continue;
+          reportedDiagnostics.add(key);
+          reportWarning(`[claude-rules] skipped ${diagnostic.sourceLabel}: ${diagnostic.reason}`);
+        }
+        nestedRules.push(
+          ...discovery.rules.map((rule) => ({
+            ...rule,
+            scopePath: nested.scopePath,
+            priority: -(index + 1),
+          })),
+        );
+      }
+      return nestedRules;
+    };
+
     const createInjection = (entries: PendingRule[]) => {
       const sorted = [...entries].sort(comparePendingRules);
       const sources = sorted.map((entry) => entry.rule.sourceLabel);
@@ -120,7 +158,13 @@ export default defineManagedExtension({
 
     pi.on("before_agent_start", async (_event, ctx) => {
       await reloadRules(ctx.cwd);
-      for (const rule of rules) {
+      const projectRoot = resolveProjectRoot(ctx.cwd);
+      const startupTarget = extractClaudeRuleTargetForCwd(ctx.cwd, projectRoot);
+      const startupRules =
+        getConfig().project && startupTarget
+          ? await loadNestedRules(projectRoot, startupTarget)
+          : [];
+      for (const rule of [...rules, ...startupRules]) {
         if (!rule.paths && !injectedRuleIds.has(rule.id)) addPending(rule);
       }
       const pending = [...pendingRules.values()];
@@ -142,26 +186,7 @@ export default defineManagedExtension({
       if (!target) return;
 
       await reloadRules(ctx.cwd);
-      const nestedRules: ClaudeRule[] = [];
-      const nestedDirectories = getConfig().project
-        ? discoverNestedClaudeRuleDirectories(projectRoot, target)
-        : [];
-      for (const [index, nested] of nestedDirectories.entries()) {
-        const discovery = await discoverClaudeRulesInDirectories([nested.directory]);
-        for (const diagnostic of discovery.diagnostics) {
-          const key = `${diagnostic.sourceLabel}:${diagnostic.reason}`;
-          if (reportedDiagnostics.has(key)) continue;
-          reportedDiagnostics.add(key);
-          reportWarning(`[claude-rules] skipped ${diagnostic.sourceLabel}: ${diagnostic.reason}`);
-        }
-        nestedRules.push(
-          ...discovery.rules.map((rule) => ({
-            ...rule,
-            scopePath: nested.scopePath,
-            priority: -(index + 1),
-          })),
-        );
-      }
+      const nestedRules = getConfig().project ? await loadNestedRules(projectRoot, target) : [];
 
       let foundFreshRule = false;
       for (const rule of [...rules, ...nestedRules]) {

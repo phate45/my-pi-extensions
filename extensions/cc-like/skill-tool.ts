@@ -2,7 +2,9 @@ import type { ExtensionAPI } from "@earendil-works/pi-coding-agent";
 import { Text } from "@earendil-works/pi-tui";
 import { Type } from "typebox";
 import {
+  activateClaudeSkillsForCwd,
   activateClaudeSkillsForTarget,
+  getActivatedClaudeSkills,
   getSkillCommands,
   resetActivatedClaudeSkills,
   type SkillSummary,
@@ -181,11 +183,21 @@ export default defineManagedExtension({
       resetActivatedClaudeSkills(pi);
       pendingSkills.clear();
       initialSkills = undefined;
+      if (!areSkillsDisabled() && typeof ctx.cwd === "string") {
+        activateClaudeSkillsForCwd(pi, ctx.cwd);
+      }
       registerSkillTool();
     });
 
     pi.on("before_agent_start", async (event) => {
-      initialSkills ??= getSkillCommands(pi);
+      initialSkills ??= [
+        ...new Map(
+          [...getSkillCommands(pi), ...getActivatedClaudeSkills(pi)].map((skill) => [
+            skill.path,
+            skill,
+          ]),
+        ).values(),
+      ];
       const replacement = renderSkillPromptReplacement(initialSkills);
       if (!replacement) return;
       return {

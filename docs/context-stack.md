@@ -1,6 +1,6 @@
 ---
 created: 2026-06-21T10:13:05
-modified: 2026-06-21T23:17:59
+modified: 2026-08-09T21:14:12
 ---
 
 # Context Stack
@@ -20,7 +20,7 @@ This stack owns:
 
 Current Claude-file knobs live under `extensions.cc-context-local-files.config.claudeFiles`:
 - `global` → `~/.claude/CLAUDE.md`
-- `project` → `<git project root>/CLAUDE.md` (falls back to `cwd` outside git)
+- `project` → `CLAUDE.md` files from the git project root through `cwd` (falls back to `cwd` outside git)
 - `local` → `<git project root>/CLAUDE.local.md` (falls back to `cwd` outside git)
 
 When `CLAUDE_PROJECT_DIR` is set, Claude-family project discovery uses that directory as its starting point instead of Pi's `cwd`.

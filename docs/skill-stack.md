@@ -1,6 +1,6 @@
 ---
 created: 2026-06-21T10:13:05
-modified: 2026-08-09T14:39:39
+modified: 2026-08-09T21:14:20
 ---
 
 # Skill Stack
@@ -43,7 +43,7 @@ Source semantics for `cc-resource-paths`:
 When `CLAUDE_PROJECT_DIR` is set, the Claude project root resolves from that directory instead of Pi's `cwd`.
 This affects `.claude/commands`, `.claude/skills`, and Claude skill execution/discovery, but does not change Pi's native resource loaders.
 
-Package-local `.claude/skills` directories below the project root activate lazily when `read`, `edit`, or `write` targets their subtree. Ancestor package skill directories compose while sibling package directories stay inactive. Activated skills use stable qualified names such as `packages/api:deploy`; this prevents their meaning from changing when another package provides the same frontmatter name.
+Package-local `.claude/skills` directories below the project root activate when Pi starts inside their subtree, or lazily when `read`, `edit`, or `write` targets their subtree. Ancestor package skill directories compose while sibling package directories stay inactive. Activated skills use stable qualified names such as `packages/api:deploy`; this prevents their meaning from changing when another package provides the same frontmatter name.
 
 Pi's native skill resource loader only discovers skills at startup or reload, so lazy package skills stay in the bundle's in-memory skill registry rather than becoming native Pi skills. The `skill` tool remains one stable dispatcher and its startup skill list never changes mid-session. Each activation injects a single context message wrapped in `<system-reminder><skill-discovery>…</skill-discovery></system-reminder>`; the tool and `/skill:name` router can then resolve the newly announced qualified names.
 

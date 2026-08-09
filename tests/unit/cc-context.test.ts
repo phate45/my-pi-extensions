@@ -94,13 +94,14 @@ describe("cc context discovery", () => {
     ]);
   });
 
-  test("configured Claude files resolve against the git project root", async () => {
+  test("configured Claude files compose from the git project root through cwd", async () => {
     const root = await makeTempDir();
     const project = path.join(root, "project");
     const nested = path.join(project, "src", "package");
     await mkdir(nested, { recursive: true });
     execFileSync("git", ["init", project], { stdio: "ignore" });
     await writeFile(path.join(project, "CLAUDE.md"), "project claude");
+    await writeFile(path.join(nested, "CLAUDE.md"), "package claude");
     await writeFile(path.join(project, "CLAUDE.local.md"), "local claude");
 
     const files = discoverConfiguredClaudeContextFiles(
@@ -111,6 +112,7 @@ describe("cc context discovery", () => {
 
     expect(files.map((file) => path.relative(root, file.path))).toEqual([
       path.join("project", "CLAUDE.md"),
+      path.join("project", "src", "package", "CLAUDE.md"),
       path.join("project", "CLAUDE.local.md"),
     ]);
   });

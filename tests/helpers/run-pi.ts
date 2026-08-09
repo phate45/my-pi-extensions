@@ -23,6 +23,7 @@ export type CapturedExtensionState = {
 
 type RunPiOptions = {
   env: TempPiEnv;
+  cwd?: string;
   approve?: boolean;
   overrideSettingsPath?: string;
   headless?: boolean;
@@ -44,7 +45,7 @@ export async function runPiAndCaptureState(options: RunPiOptions): Promise<Captu
 
   await new Promise<void>((resolve, reject) => {
     const child = spawn("pi", args, {
-      cwd: options.env.projectDir,
+      cwd: options.cwd ?? options.env.projectDir,
       env: {
         ...process.env,
         PI_CODING_AGENT_DIR: options.env.agentDir,
@@ -77,6 +78,58 @@ export async function runPiAndCaptureState(options: RunPiOptions): Promise<Captu
 
   const raw = await readFile(outputPath, "utf8");
   return JSON.parse(raw) as CapturedExtensionState;
+}
+
+export type CapturedContextState = {
+  systemPrompt: string;
+  skillCommands: string[];
+  messages: unknown[];
+};
+
+export async function runPiAndCaptureContext(options: RunPiOptions): Promise<CapturedContextState> {
+  const outputPath = path.join(options.env.outputDir, "context.json");
+  const contextProbePath = path.join(repoRoot, "tests", "probes", "capture-context-state.ts");
+  const args = ["--no-session", "-e", contextProbePath, "-p", "capture context"];
+
+  if (options.approve === true) args.push("--approve");
+  if (options.approve === false) args.push("--no-approve");
+
+  await new Promise<void>((resolve, reject) => {
+    const child = spawn("pi", args, {
+      cwd: options.cwd ?? options.env.projectDir,
+      env: {
+        ...process.env,
+        PI_CODING_AGENT_DIR: options.env.agentDir,
+        MY_PI_EXTENSIONS_TEST_OUTPUT: outputPath,
+        ANTHROPIC_API_KEY: "test-key",
+      },
+      stdio: ["ignore", "pipe", "pipe"],
+    });
+
+    let stderr = "";
+    let stdout = "";
+    child.stdout.on("data", (chunk) => {
+      stdout += String(chunk);
+    });
+    child.stderr.on("data", (chunk) => {
+      stderr += String(chunk);
+    });
+    child.on("error", reject);
+    child.on("exit", (code, signal) => {
+      if (code === 0) {
+        resolve();
+        return;
+      }
+      reject(
+        new Error(
+          `pi exited with code=${code} signal=${signal}\nstdout:\n${stdout}\nstderr:\n${stderr}`,
+        ),
+      );
+    });
+  });
+
+  const raw = await readFile(outputPath, "utf8");
+  return JSON.parse(raw) as CapturedContextState;
 }
 
 export function buildAgentSettings() {

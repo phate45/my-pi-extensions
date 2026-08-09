@@ -9,6 +9,7 @@ import { parseShellLikeArgs } from "./cli-args.js";
 import { expandClaudeMarkdownResource } from "./claude-markdown-expansion.js";
 import { splitFrontmatter } from "./markdown-preprocess.js";
 import { maybeRealpath } from "./cc-context.js";
+import { resolveClaudeProjectDir } from "./claude-project-dir.js";
 import { resolveProjectRoot } from "./git-project-root.js";
 
 export type SkillMetadata = {
@@ -313,15 +314,11 @@ export function getActivatedClaudeSkills(pi: ExtensionAPI): SkillSummary[] {
   return [...(activatedSkillsByApi.get(pi)?.values() ?? [])];
 }
 
-export function activateClaudeSkillsForTarget(
+function activateClaudeSkillsForProjectTarget(
   pi: ExtensionAPI,
-  cwd: string,
-  rawPath: string,
+  projectRoot: string,
+  target: string,
 ): SkillSummary[] {
-  const projectRoot = resolveProjectRoot(cwd);
-  const target = extractProjectRelativePath(rawPath, cwd, projectRoot);
-  if (!target) return [];
-
   const activated = activatedSkillsByApi.get(pi) ?? new Map<string, SkillSummary>();
   activatedSkillsByApi.set(pi, activated);
   const discovered = discoverSkillsInDirectories(
@@ -334,6 +331,38 @@ export function activateClaudeSkillsForTarget(
     fresh.push(skill);
   }
   return fresh;
+}
+
+export function activateClaudeSkillsForTarget(
+  pi: ExtensionAPI,
+  cwd: string,
+  rawPath: string,
+): SkillSummary[] {
+  const projectRoot = resolveProjectRoot(cwd);
+  const target = extractProjectRelativePath(rawPath, cwd, projectRoot);
+  if (!target) return [];
+
+  return activateClaudeSkillsForProjectTarget(pi, projectRoot, target);
+}
+
+export function activateClaudeSkillsForCwd(pi: ExtensionAPI, cwd: string): SkillSummary[] {
+  const projectRoot = resolveProjectRoot(cwd);
+  const projectDir = resolveClaudeProjectDir(cwd);
+  const relativePath = path.relative(projectRoot, projectDir);
+  if (
+    relativePath.length === 0 ||
+    relativePath === ".." ||
+    relativePath.startsWith(`..${path.sep}`) ||
+    path.isAbsolute(relativePath)
+  ) {
+    return [];
+  }
+
+  return activateClaudeSkillsForProjectTarget(
+    pi,
+    projectRoot,
+    path.join(relativePath, ".pi-startup").split(path.sep).join("/"),
+  );
 }
 
 export function getSkillsForInvocation(

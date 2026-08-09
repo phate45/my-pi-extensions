@@ -7,6 +7,7 @@ import {
   getCcContextLocalFilesConfig,
   type ClaudeFileSourceConfig,
 } from "./claude-resource-load-config.js";
+import { resolveClaudeProjectDir } from "./claude-project-dir.js";
 import { resolveProjectRoot } from "./git-project-root.js";
 
 export type ContextFile = {
@@ -158,6 +159,26 @@ export function discoverExtendedContextFiles(cwd: string, agentDir = getAgentDir
   return files;
 }
 
+function discoverProjectContextDirectories(cwd: string, projectRoot: string): string[] {
+  const projectDir = resolveClaudeProjectDir(cwd);
+  const relativePath = path.relative(projectRoot, projectDir);
+  if (
+    relativePath === ".." ||
+    relativePath.startsWith(`..${path.sep}`) ||
+    path.isAbsolute(relativePath)
+  ) {
+    return [projectRoot];
+  }
+
+  const directories = [projectRoot];
+  let current = projectRoot;
+  for (const segment of relativePath.split(path.sep).filter(Boolean)) {
+    current = path.join(current, segment);
+    directories.push(current);
+  }
+  return directories;
+}
+
 export function discoverConfiguredClaudeContextFiles(
   cwd: string,
   claudeFiles: ClaudeFileSourceConfig,
@@ -176,7 +197,11 @@ export function discoverConfiguredClaudeContextFiles(
   };
 
   if (claudeFiles.global) add(readFileIfExists(path.join(agentDir, "CLAUDE.md")));
-  if (claudeFiles.project) add(readFileIfExists(path.join(projectRoot, "CLAUDE.md")));
+  if (claudeFiles.project) {
+    for (const directory of discoverProjectContextDirectories(cwd, projectRoot)) {
+      add(readFileIfExists(path.join(directory, "CLAUDE.md")));
+    }
+  }
   if (claudeFiles.local) add(readFileIfExists(path.join(projectRoot, "CLAUDE.local.md")));
 
   return files;

@@ -1,6 +1,6 @@
 ---
 created: 2026-07-30T22:32:26
-modified: 2026-08-09T10:43:19
+modified: 2026-08-09T21:14:24
 ---
 
 # Claude Rules Stack
@@ -53,7 +53,7 @@ The parser accepts standard YAML frontmatter. Invalid frontmatter skips only the
 
 ## Activation
 
-Unconditional rules enter context before the first model call. Path-scoped rules activate when the agent targets a matching project file with `read`, `edit`, or `write`.
+Unconditional project rules enter context before the first model call. When Pi starts inside a package subtree, unconditional nested rules along that directory's ancestry enter context at the same boundary. Path-scoped rules activate when the agent targets a matching project file with `read`, `edit`, or `write`.
 
 - `read` executes normally; Pi injects matching root and nested rules before the next model call.
 - `edit` and `write` block before mutation; Pi injects matching root and nested rules and asks the agent to retry.

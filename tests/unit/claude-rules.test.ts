@@ -1,4 +1,5 @@
 import { afterEach, describe, expect, test } from "bun:test";
+import { execFileSync } from "node:child_process";
 import { mkdir, mkdtemp, rm, symlink, writeFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
@@ -278,6 +279,27 @@ describe("claude-rules extension", () => {
     expect(mock.sentMessages).toHaveLength(3);
     expect(JSON.stringify(mock.sentMessages[1])).toContain("Base rule");
     expect(JSON.stringify(mock.sentMessages[2])).toContain("Typed rule");
+  });
+
+  test("loads nested unconditional rules from the launch directory", async () => {
+    const project = await makeTempDir();
+    const packageDir = path.join(project, "packages", "foo");
+    await mkdir(packageDir, { recursive: true });
+    execFileSync("git", ["init", project], { stdio: "ignore" });
+    await writeRule(project, ".claude/rules/base.md", "Project rule.");
+    await writeRule(packageDir, ".claude/rules/local.md", "Package rule.");
+    const mock = createMockExtensionAPI();
+    claudeRulesExtension(mock.pi);
+    const ctx = { cwd: packageDir, hasUI: false, sessionManager: { getSessionId: () => "one" } };
+
+    await mock.handlers.get("session_start")?.[0]?.({ reason: "startup" }, ctx);
+    const injection = await mock.handlers.get("before_agent_start")?.[0]?.(
+      { systemPrompt: "BASE" },
+      ctx,
+    );
+
+    expect(injection.message.content).toContain("Project rule.");
+    expect(injection.message.content).toContain("Package rule.");
   });
 
   test("loads nested unconditional rules lazily and isolates sibling packages", async () => {

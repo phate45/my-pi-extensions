@@ -1,4 +1,5 @@
 import { afterEach, describe, expect, test } from "bun:test";
+import { execFileSync } from "node:child_process";
 import { mkdtemp, mkdir, rm, writeFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
@@ -194,6 +195,22 @@ describe("skill-tool extension", () => {
     );
     expect(toolResult.content[0]?.text).toContain("Skill not found: ambient-skill");
     expect(toolResult.content[0]?.text).toContain("Available skills: explicit-skill");
+  });
+
+  test("activates package skills from the launch directory before the first model call", async () => {
+    const root = await makeTempDir();
+    const nativeSkillPath = await writeSkill(root, "native-skill");
+    await writePackageSkill(root);
+    execFileSync("git", ["init", root], { stdio: "ignore" });
+    const { pi, handlers } = createMockExtensionAPI();
+    (pi as any).getCommands = () => [{ source: "skill", sourceInfo: { path: nativeSkillPath } }];
+    skillToolExtension(pi);
+
+    await handlers.get("session_start")?.[0]?.({}, { cwd: path.join(root, "packages", "api") });
+    const result = await handlers.get("before_agent_start")?.[0]?.({ systemPrompt: "base prompt" });
+
+    expect(result?.systemPrompt).toContain("native-skill");
+    expect(result?.systemPrompt).toContain("packages/api:deploy");
   });
 
   test("keeps the native skill inventory stable while injecting newly activated package skills", async () => {
