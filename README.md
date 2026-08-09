@@ -59,9 +59,21 @@ Common commands:
 - `just test`
 - `just test-unit`
 - `just test-integration`
+- `just compat` — query npm and test against the latest Pi release in an isolated worktree
+- `just compat-update` — run the compatibility check, then promote the tested dependency pins
 - `just lint`
 - `just lint-ci`
 - `just generate-config`
+
+`just compat` exits immediately when the pinned Pi SDK does not trail npm's latest release. When npm
+publishes a newer release, the recipe snapshots the current checkout in a temporary worktree,
+updates the snapshot's Pi development dependencies, runs typechecks and tests, and loads the package
+with the new Pi CLI under isolated settings. It removes the snapshot afterward and never changes the
+global Pi installation or settings. The runtime smoke test pre-approves trust and runs from an empty
+isolated directory, so it never prompts for project approval.
+
+After `just compat` passes, run `just compat-update` to repeat the same check and copy the tested
+`package.json` and `bun.lock` into the working checkout. Failed checks leave both files untouched.
 
 ## Docs
 
