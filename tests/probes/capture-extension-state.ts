@@ -18,6 +18,7 @@ const CHECKS = {
     "interactive-at-read",
     "frontmatter-timestamps",
     "web-research",
+    "ask-user",
     "whimsical",
     "yeet",
   ],

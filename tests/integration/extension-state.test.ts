@@ -49,6 +49,7 @@ describe("extension state integration", () => {
     expect(state.effective.extensions["custom-header"]).toBe(true);
     expect(state.effective.extensions["frontmatter-timestamps"]).toBe(true);
     expect(state.effective.extensions["web-research"]).toBe(true);
+    expect(state.effective.extensions["ask-user"]).toBe(true);
     expect(state.errors).toEqual([]);
   });
 
@@ -197,5 +198,6 @@ describe("extension state integration", () => {
     expect(state.effective.featureFlags.headless).toBe(true);
     expect(state.commands).not.toContain("context");
     expect(state.commands).not.toContain("yeet");
+    expect(state.tools).not.toContain("ask_user");
   });
 });

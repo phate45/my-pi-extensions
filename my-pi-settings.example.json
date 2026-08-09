@@ -12,6 +12,9 @@
         "entries": {}
       }
     },
+    "ask-user": {
+      "enabled": true
+    },
     "cc-context-local-files": {
       "enabled": true,
       "config": {
