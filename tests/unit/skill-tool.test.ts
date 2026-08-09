@@ -203,7 +203,7 @@ describe("skill-tool extension", () => {
     setBundleConfigForTests({
       extensions: { "cc-resource-paths": { enabled: true, config: { skills: { project: true } } } },
     });
-    const { pi, handlers, sentMessages, tools } = createMockExtensionAPI();
+    const { pi, handlers, messageRenderers, sentMessages, tools } = createMockExtensionAPI();
     (pi as any).getCommands = () => [{ source: "skill", sourceInfo: { path: nativeSkillPath } }];
     skillToolExtension(pi);
 
@@ -226,6 +226,42 @@ describe("skill-tool extension", () => {
     expect(afterActivation?.systemPrompt).not.toContain("packages/api:deploy");
     expect(JSON.stringify(sentMessages[0])).toContain("<skill-discovery>");
     expect(JSON.stringify(sentMessages[0])).toContain("packages/api:deploy");
+
+    const renderer = messageRenderers.get("claude-skill-discovery");
+    expect(renderer).toBeDefined();
+    const theme = { fg: (_color: string, text: string) => text };
+    const preview = renderer?.(
+      (sentMessages[0] as { message: unknown }).message,
+      { expanded: false },
+      theme,
+    );
+    expect(
+      (preview as { render: (width: number) => string[] })
+        .render(200)
+        .map((line) => line.trimEnd())
+        .join("\n"),
+    ).toBe("Newly available skills:\n↳ packages/api:deploy — Deploy the packages/api package.");
+
+    const expanded = renderer?.(
+      (sentMessages[0] as { message: unknown }).message,
+      { expanded: true },
+      theme,
+    );
+    expect((expanded as { render: (width: number) => string[] }).render(200).join("\n")).toContain(
+      "<skill-discovery>",
+    );
+
+    const legacyPreview = renderer?.(
+      { content: "", details: { skills: ["packages/api:deploy"] } },
+      { expanded: false },
+      theme,
+    );
+    expect(
+      (legacyPreview as { render: (width: number) => string[] })
+        .render(200)
+        .map((line) => line.trimEnd())
+        .join("\n"),
+    ).toBe("Newly available skills:\n↳ packages/api:deploy");
 
     const toolResult = await (tools[0] as any).execute(
       "tool-call",

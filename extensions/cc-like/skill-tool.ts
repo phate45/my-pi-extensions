@@ -23,6 +23,10 @@ type SkillToolParams = {
   name: string;
 };
 
+type SkillDiscoveryMessageDetails = {
+  skills: Array<{ name: string; description: string } | string>;
+};
+
 function formatSkillToolResult(
   result: { content: Array<{ type: string; text?: string }> },
   expanded: boolean,
@@ -103,6 +107,29 @@ export default defineManagedExtension({
     let skillToolRegistered = false;
     let initialSkills: SkillSummary[] | undefined;
     const pendingSkills = new Map<string, SkillSummary>();
+
+    pi.registerMessageRenderer<SkillDiscoveryMessageDetails>(
+      SKILL_DISCOVERY_MESSAGE_TYPE,
+      (message, { expanded }, theme) => {
+        const skills = message.details?.skills ?? [];
+        const summary = `Newly available skills:\n${skills
+          .map((skill) =>
+            typeof skill === "string" ? `↳ ${skill}` : `↳ ${skill.name} — ${skill.description}`,
+          )
+          .join("\n")}`;
+        if (!expanded) return new Text(theme.fg("muted", summary), 0, 0);
+
+        const content =
+          typeof message.content === "string"
+            ? message.content
+            : JSON.stringify(message.content, null, 2);
+        return new Text(
+          `${theme.fg("accent", "Newly available skills:")}\n${theme.fg("dim", summary.slice("Newly available skills:\n".length))}\n\n${content}`,
+          0,
+          0,
+        );
+      },
+    );
 
     const registerSkillTool = (force = false) => {
       if (skillToolRegistered) return;
@@ -198,7 +225,12 @@ export default defineManagedExtension({
             "</system-reminder>",
           ].join("\n"),
           display: true,
-          details: { skills: skills.map((skill) => skill.name) },
+          details: {
+            skills: skills.map((skill) => ({
+              name: skill.name,
+              description: skill.description,
+            })),
+          } satisfies SkillDiscoveryMessageDetails,
         },
         { deliverAs: "steer" },
       );

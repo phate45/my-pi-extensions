@@ -5,6 +5,7 @@ type EventName = Parameters<ExtensionAPI["on"]>[0];
 export type MockExtensionAPI = {
   pi: ExtensionAPI;
   handlers: Map<string, Function[]>;
+  messageRenderers: Map<string, Function>;
   tools: unknown[];
   commands: string[];
   sentMessages: unknown[];
@@ -13,6 +14,7 @@ export type MockExtensionAPI = {
 
 export function createMockExtensionAPI(): MockExtensionAPI {
   const handlers = new Map<string, Function[]>();
+  const messageRenderers = new Map<string, Function>();
   const tools: unknown[] = [];
   const commands: string[] = [];
   const sentMessages: unknown[] = [];
@@ -35,7 +37,9 @@ export function createMockExtensionAPI(): MockExtensionAPI {
     getFlag() {
       return undefined;
     },
-    registerMessageRenderer() {},
+    registerMessageRenderer(customType, renderer) {
+      messageRenderers.set(customType, renderer);
+    },
     sendMessage(message, options) {
       sentMessages.push({ message, options });
     },
@@ -74,6 +78,7 @@ export function createMockExtensionAPI(): MockExtensionAPI {
   return {
     pi: pi as ExtensionAPI,
     handlers,
+    messageRenderers,
     tools,
     commands,
     sentMessages,
