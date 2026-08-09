@@ -1,6 +1,6 @@
 ---
 created: 2026-07-30T22:32:26
-modified: 2026-07-30T22:32:37
+modified: 2026-08-09T10:43:19
 ---
 
 # Claude Rules Stack
@@ -22,10 +22,13 @@ The stack uses the same Claude project resolution as commands, skills, context f
 Rule discovery checks:
 
 - project rules at `<project-root>/.claude/rules`
+- nested `.claude/rules` directories along a targeted file's ancestry
 - ancestor `.claude/rules` directories above the project root when global discovery is enabled
 - user rules at `~/.claude/rules` when global discovery is enabled
 
-Discovery recurses through Markdown files, follows symlinked files and directories, and prevents symlink cycles. A higher-priority source claims a relative rule path before lower-priority sources. Project rules therefore override global rules with the same relative path.
+Discovery recurses through Markdown files, follows symlinked files and directories, and prevents symlink cycles. A higher-priority root source claims a relative rule path before lower-priority root sources. Project rules therefore override global rules with the same relative path.
+
+Nested rule directories load lazily when `read`, `edit`, or `write` targets a file in their subtree. Their `paths` globs match relative to the directory that owns `.claude/rules`; for example, `packages/api/.claude/rules/typescript.md` can use `paths: src/**`. Parent and child rule directories compose even when they contain the same relative rule path, with the deeper rule loading after its parents.
 
 ## Rule format
 
@@ -52,8 +55,8 @@ The parser accepts standard YAML frontmatter. Invalid frontmatter skips only the
 
 Unconditional rules enter context before the first model call. Path-scoped rules activate when the agent targets a matching project file with `read`, `edit`, or `write`.
 
-- `read` executes normally; Pi injects matching rules before the next model call.
-- `edit` and `write` block before mutation; Pi injects matching rules and asks the agent to retry.
+- `read` executes normally; Pi injects matching root and nested rules before the next model call.
+- `edit` and `write` block before mutation; Pi injects matching root and nested rules and asks the agent to retry.
 - each rule injects once per compaction epoch
 - parallel matches combine into one rule message
 - compaction resets activation, immediately restores unconditional rules, and permits scoped rules to activate again
@@ -101,5 +104,7 @@ When changing this stack, verify:
 - matching edits and writes block once, then succeed on retry
 - unrelated and out-of-project paths do not activate rules
 - project rules override global rules by relative path
+- nested rules load only for targets in their subtree and match package-relative paths
+- parent and child nested roots compose with deeper rules last
 - global and project configuration switches work independently
 - `CLAUDE_PROJECT_DIR`, Git roots, worktrees, symlinks, and compaction preserve their documented behavior

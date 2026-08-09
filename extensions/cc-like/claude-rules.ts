@@ -6,6 +6,7 @@ import { type ClaudeRulesConfig, claudeRulesConfig } from "./lib/claude-resource
 import {
   type ClaudeRule,
   discoverClaudeRulesInDirectories,
+  discoverNestedClaudeRuleDirectories,
   extractClaudeRuleTarget,
   ruleMatchesTarget,
 } from "./lib/claude-rules.js";
@@ -141,8 +142,29 @@ export default defineManagedExtension({
       if (!target) return;
 
       await reloadRules(ctx.cwd);
+      const nestedRules: ClaudeRule[] = [];
+      const nestedDirectories = getConfig().project
+        ? discoverNestedClaudeRuleDirectories(projectRoot, target)
+        : [];
+      for (const [index, nested] of nestedDirectories.entries()) {
+        const discovery = await discoverClaudeRulesInDirectories([nested.directory]);
+        for (const diagnostic of discovery.diagnostics) {
+          const key = `${diagnostic.sourceLabel}:${diagnostic.reason}`;
+          if (reportedDiagnostics.has(key)) continue;
+          reportedDiagnostics.add(key);
+          reportWarning(`[claude-rules] skipped ${diagnostic.sourceLabel}: ${diagnostic.reason}`);
+        }
+        nestedRules.push(
+          ...discovery.rules.map((rule) => ({
+            ...rule,
+            scopePath: nested.scopePath,
+            priority: -(index + 1),
+          })),
+        );
+      }
+
       let foundFreshRule = false;
-      for (const rule of rules) {
+      for (const rule of [...rules, ...nestedRules]) {
         if (injectedRuleIds.has(rule.id)) continue;
         if (!rule.paths) {
           addPending(rule);

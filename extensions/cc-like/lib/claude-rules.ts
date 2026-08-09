@@ -1,4 +1,4 @@
-import { realpathSync } from "node:fs";
+import { existsSync, realpathSync } from "node:fs";
 import { readdir, readFile, realpath, stat } from "node:fs/promises";
 import path from "node:path";
 import { minimatch } from "minimatch";
@@ -11,6 +11,7 @@ export type ClaudeRule = {
   sourcePath: string;
   sourceLabel: string;
   relativePath: string;
+  scopePath?: string;
   body: string;
   paths?: string[];
   priority: number;
@@ -76,10 +77,65 @@ export async function discoverClaudeRulesInDirectories(
   return { rules, diagnostics };
 }
 
+export type NestedClaudeRuleDirectory = {
+  directory: string;
+  scopePath: string;
+};
+
+export function discoverNestedClaudeRuleDirectories(
+  projectRoot: string,
+  target: string,
+): NestedClaudeRuleDirectory[] {
+  const canonicalRoot = canonicalizePath(projectRoot);
+  const absoluteTarget = path.resolve(canonicalRoot, ...target.split("/"));
+  const targetRelativeToRoot = path.relative(canonicalRoot, absoluteTarget);
+  if (
+    targetRelativeToRoot === ".." ||
+    targetRelativeToRoot.startsWith(`..${path.sep}`) ||
+    path.isAbsolute(targetRelativeToRoot)
+  ) {
+    return [];
+  }
+
+  const directories: NestedClaudeRuleDirectory[] = [];
+  const seen = new Set<string>();
+  let current = path.dirname(absoluteTarget);
+  while (current !== canonicalRoot) {
+    const directory = path.join(current, ".claude", "rules");
+    if (existsSync(directory)) {
+      const canonicalDirectory = canonicalizePath(directory);
+      if (!seen.has(canonicalDirectory)) {
+        seen.add(canonicalDirectory);
+        directories.unshift({
+          directory,
+          scopePath: path.relative(canonicalRoot, current).split(path.sep).join("/"),
+        });
+      }
+    }
+
+    const parent = path.dirname(current);
+    if (parent === current) break;
+    current = parent;
+  }
+  return directories;
+}
+
 export function ruleMatchesTarget(rule: ClaudeRule, target: string): boolean {
+  let matchTarget = target;
+  if (rule.scopePath) {
+    matchTarget = path.posix.relative(rule.scopePath, target);
+    if (
+      matchTarget === ".." ||
+      matchTarget.startsWith("../") ||
+      path.posix.isAbsolute(matchTarget)
+    ) {
+      return false;
+    }
+  }
+
   return Boolean(
     rule.paths?.some((pattern) =>
-      minimatch(target, normalizePattern(pattern), { dot: true, nocase: false }),
+      minimatch(matchTarget, normalizePattern(pattern), { dot: true, nocase: false }),
     ),
   );
 }

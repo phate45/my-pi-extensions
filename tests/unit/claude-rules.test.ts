@@ -5,6 +5,7 @@ import path from "node:path";
 import claudeRulesExtension from "../../extensions/cc-like/claude-rules.js";
 import {
   discoverClaudeRulesInDirectories,
+  discoverNestedClaudeRuleDirectories,
   extractClaudeRuleTarget,
   ruleMatchesTarget,
 } from "../../extensions/cc-like/lib/claude-rules.js";
@@ -64,6 +65,43 @@ describe("Claude rule discovery", () => {
     ]);
     expect(result.rules[1]?.paths).toEqual(["src/**/*.{ts,tsx}", ".github/**"]);
     expect(result.rules[1]?.body).toBe("Project auth");
+  });
+
+  test("discovers nested rule roots only along the target ancestry", async () => {
+    const root = await makeTempDir();
+    await writeRule(root, "packages/.claude/rules/shared.md", "Shared package rule");
+    await writeRule(root, "packages/foo/.claude/rules/local.md", "Foo rule");
+    await writeRule(root, "packages/bar/.claude/rules/local.md", "Bar rule");
+
+    const directories = discoverNestedClaudeRuleDirectories(root, "packages/foo/src/service.ts");
+
+    expect(directories).toEqual([
+      {
+        directory: path.join(root, "packages/.claude/rules"),
+        scopePath: "packages",
+      },
+      {
+        directory: path.join(root, "packages/foo/.claude/rules"),
+        scopePath: "packages/foo",
+      },
+    ]);
+  });
+
+  test("matches nested rule paths relative to their owning package", () => {
+    const rule = {
+      id: "nested-rule",
+      sourcePath: "/repo/packages/foo/.claude/rules/typed.md",
+      sourceLabel: "packages/foo/.claude/rules/typed.md",
+      relativePath: "typed.md",
+      scopePath: "packages/foo",
+      body: "Typed",
+      paths: ["src/**"],
+      priority: -1,
+    };
+
+    expect(ruleMatchesTarget(rule, "packages/foo/src/app.ts")).toBe(true);
+    expect(ruleMatchesTarget(rule, "packages/foo/test/app.ts")).toBe(false);
+    expect(ruleMatchesTarget(rule, "packages/bar/src/app.ts")).toBe(false);
   });
 
   test("follows symlinked directories without looping", async () => {
@@ -240,6 +278,124 @@ describe("claude-rules extension", () => {
     expect(mock.sentMessages).toHaveLength(3);
     expect(JSON.stringify(mock.sentMessages[1])).toContain("Base rule");
     expect(JSON.stringify(mock.sentMessages[2])).toContain("Typed rule");
+  });
+
+  test("loads nested unconditional rules lazily and isolates sibling packages", async () => {
+    const project = await makeTempDir();
+    await writeRule(
+      project,
+      "packages/foo/.claude/rules/local.md",
+      "Only applies inside package foo.",
+    );
+    process.env.CLAUDE_PROJECT_DIR = project;
+    const mock = createMockExtensionAPI();
+    claudeRulesExtension(mock.pi);
+    const ctx = { cwd: project, hasUI: false, sessionManager: { getSessionId: () => "one" } };
+    await mock.handlers.get("session_start")?.[0]?.({ reason: "startup" }, ctx);
+
+    const startup = await mock.handlers.get("before_agent_start")?.[0]?.(
+      { systemPrompt: "BASE" },
+      ctx,
+    );
+    expect(startup).toBeUndefined();
+
+    await mock.handlers.get("tool_call")?.[0]?.(
+      { toolName: "read", input: { path: "packages/bar/src/app.ts" } },
+      ctx,
+    );
+    await mock.handlers.get("turn_end")?.[0]?.({}, ctx);
+    expect(mock.sentMessages).toHaveLength(0);
+
+    await mock.handlers.get("tool_call")?.[0]?.(
+      { toolName: "read", input: { path: "packages/foo/src/app.ts" } },
+      ctx,
+    );
+    await mock.handlers.get("turn_end")?.[0]?.({}, ctx);
+
+    expect(mock.sentMessages).toHaveLength(1);
+    expect(JSON.stringify(mock.sentMessages[0])).toContain("Only applies inside package foo.");
+  });
+
+  test("matches nested scoped rules package-relatively and blocks mutations", async () => {
+    const project = await makeTempDir();
+    await writeRule(
+      project,
+      "packages/foo/.claude/rules/typed.md",
+      "---\npaths: src/**\n---\nUse package-local types.",
+    );
+    process.env.CLAUDE_PROJECT_DIR = project;
+    const mock = createMockExtensionAPI();
+    claudeRulesExtension(mock.pi);
+    const ctx = { cwd: project, hasUI: false, sessionManager: { getSessionId: () => "one" } };
+    await mock.handlers.get("session_start")?.[0]?.({ reason: "startup" }, ctx);
+    const handler = mock.handlers.get("tool_call")?.[0];
+
+    const sibling = await handler?.(
+      { toolName: "edit", input: { path: "packages/bar/src/app.ts" } },
+      ctx,
+    );
+    const first = await handler?.(
+      { toolName: "edit", input: { path: "packages/foo/src/app.ts" } },
+      ctx,
+    );
+    await mock.handlers.get("turn_end")?.[0]?.({}, ctx);
+    const retry = await handler?.(
+      { toolName: "edit", input: { path: "packages/foo/src/app.ts" } },
+      ctx,
+    );
+
+    expect(sibling).toBeUndefined();
+    expect(first).toMatchObject({ block: true });
+    expect(JSON.stringify(mock.sentMessages[0])).toContain("Use package-local types.");
+    expect(retry).toBeUndefined();
+  });
+
+  test("honors the project source switch for nested rules", async () => {
+    const project = await makeTempDir();
+    await writeRule(project, "packages/foo/.claude/rules/local.md", "Nested project rule.");
+    process.env.CLAUDE_PROJECT_DIR = project;
+    setBundleConfigForTests({
+      extensions: {
+        "claude-rules": { enabled: true, config: { global: false, project: false } },
+      },
+    });
+    const mock = createMockExtensionAPI();
+    claudeRulesExtension(mock.pi);
+    const ctx = { cwd: project, hasUI: false, sessionManager: { getSessionId: () => "one" } };
+    await mock.handlers.get("session_start")?.[0]?.({ reason: "startup" }, ctx);
+
+    const result = await mock.handlers.get("tool_call")?.[0]?.(
+      { toolName: "edit", input: { path: "packages/foo/src/app.ts" } },
+      ctx,
+    );
+    await mock.handlers.get("turn_end")?.[0]?.({}, ctx);
+
+    expect(result).toBeUndefined();
+    expect(mock.sentMessages).toHaveLength(0);
+  });
+
+  test("composes same-named parent and child rules with the child last", async () => {
+    const project = await makeTempDir();
+    await writeRule(project, "packages/.claude/rules/style.md", "Parent package rule.");
+    await writeRule(project, "packages/foo/.claude/rules/style.md", "Child package rule.");
+    process.env.CLAUDE_PROJECT_DIR = project;
+    const mock = createMockExtensionAPI();
+    claudeRulesExtension(mock.pi);
+    const ctx = { cwd: project, hasUI: false, sessionManager: { getSessionId: () => "one" } };
+    await mock.handlers.get("session_start")?.[0]?.({ reason: "startup" }, ctx);
+
+    await mock.handlers.get("tool_call")?.[0]?.(
+      { toolName: "read", input: { path: "packages/foo/src/app.ts" } },
+      ctx,
+    );
+    await mock.handlers.get("turn_end")?.[0]?.({}, ctx);
+
+    const message = JSON.stringify(mock.sentMessages[0]);
+    expect(message).toContain("Parent package rule.");
+    expect(message).toContain("Child package rule.");
+    expect(message.indexOf("Parent package rule.")).toBeLessThan(
+      message.indexOf("Child package rule."),
+    );
   });
 
   test("honors source config and CLAUDE_PROJECT_DIR", async () => {
