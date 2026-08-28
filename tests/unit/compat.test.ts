@@ -4,7 +4,9 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 
 import {
+  formatCompatibilityBunfig,
   getCompatibilityDecision,
+  getPiReleaseAgeExcludes,
   promoteCompatibilityDependencies,
   trustedPiArgs,
   updatePiDevelopmentDependencies,
@@ -31,6 +33,39 @@ describe("compatibility target selection", () => {
 describe("compatibility runtime smoke test", () => {
   test("pre-approves project trust for startup commands", () => {
     expect(trustedPiArgs(["--help"])).toEqual(["--approve", "--help"]);
+  });
+});
+
+describe("compatibility supply-chain quarantine", () => {
+  test("exempts only the recursive Pi release train", () => {
+    const dependencies = new Map<string, Record<string, string>>([
+      ["@earendil-works/pi-ai", { "@earendil-works/pi-telemetry": "^0.84.3" }],
+      ["@earendil-works/pi-client", { "@earendil-works/pi-protocol": "^0.84.3" }],
+    ]);
+
+    expect(
+      getPiReleaseAgeExcludes(
+        {
+          "@earendil-works/pi-ai": "^0.84.3",
+          "@earendil-works/pi-client": "^0.84.3",
+          chalk: "^5.6.2",
+        },
+        (packageName) => dependencies.get(packageName) ?? {},
+      ),
+    ).toEqual([
+      "@earendil-works/pi-ai",
+      "@earendil-works/pi-client",
+      "@earendil-works/pi-coding-agent",
+      "@earendil-works/pi-protocol",
+      "@earendil-works/pi-telemetry",
+      "@earendil-works/pi-tui",
+    ]);
+  });
+
+  test("keeps the five-day quarantine for unrelated dependencies", () => {
+    expect(formatCompatibilityBunfig(["@earendil-works/pi-ai", "@earendil-works/pi-tui"])).toBe(
+      `# Generated only inside the disposable Pi compatibility snapshot.\n[install]\nminimumReleaseAge = 432000\nminimumReleaseAgeExcludes = [\n  "@earendil-works/pi-ai",\n  "@earendil-works/pi-tui",\n]\n`,
+    );
   });
 });
 
@@ -77,15 +112,18 @@ describe("compatibility dependency update", () => {
     try {
       writeFileSync(join(source, "package.json"), '{"version":"tested"}\n');
       writeFileSync(join(source, "bun.lock"), "tested lock\n");
+      writeFileSync(join(source, "bunfig.toml"), "snapshot quarantine exception\n");
       writeFileSync(join(source, "README.md"), "do not promote\n");
       writeFileSync(join(destination, "package.json"), '{"version":"old"}\n');
       writeFileSync(join(destination, "bun.lock"), "old lock\n");
+      writeFileSync(join(destination, "bunfig.toml"), "keep global policy\n");
       writeFileSync(join(destination, "README.md"), "keep me\n");
 
       promoteCompatibilityDependencies(source, destination);
 
       expect(readFileSync(join(destination, "package.json"), "utf8")).toContain("tested");
       expect(readFileSync(join(destination, "bun.lock"), "utf8")).toBe("tested lock\n");
+      expect(readFileSync(join(destination, "bunfig.toml"), "utf8")).toBe("keep global policy\n");
       expect(readFileSync(join(destination, "README.md"), "utf8")).toBe("keep me\n");
     } finally {
       rmSync(source, { recursive: true, force: true });

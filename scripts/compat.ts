@@ -11,6 +11,8 @@ const PI_DEVELOPMENT_PACKAGES = [
   PI_CODING_AGENT,
   "@earendil-works/pi-tui",
 ] as const;
+const PI_PACKAGE_PREFIX = "@earendil-works/pi-";
+const MINIMUM_RELEASE_AGE_SECONDS = 5 * 24 * 60 * 60;
 
 type PackageJson = {
   devDependencies?: Record<string, string>;
@@ -31,6 +33,48 @@ export function getCompatibilityDecision(
 
 export function trustedPiArgs(args: string[]): string[] {
   return ["--approve", ...args];
+}
+
+export function getPiReleaseAgeExcludes(
+  codingAgentDependencies: Record<string, unknown>,
+  loadDependencies: (packageName: string) => Record<string, unknown>,
+): string[] {
+  const packages = new Set(
+    [...PI_DEVELOPMENT_PACKAGES, ...Object.keys(codingAgentDependencies)].filter((packageName) =>
+      packageName.startsWith(PI_PACKAGE_PREFIX),
+    ),
+  );
+  const expanded = new Set([PI_CODING_AGENT]);
+  const pending = [...packages].filter((packageName) => !expanded.has(packageName));
+
+  while (pending.length > 0) {
+    const packageName = pending.shift() as string;
+    if (expanded.has(packageName)) continue;
+    expanded.add(packageName);
+
+    for (const dependency of Object.keys(loadDependencies(packageName))) {
+      if (!dependency.startsWith(PI_PACKAGE_PREFIX) || packages.has(dependency)) continue;
+      packages.add(dependency);
+      pending.push(dependency);
+    }
+  }
+
+  return [...packages].sort();
+}
+
+export function formatCompatibilityBunfig(packageNames: string[]): string {
+  const excludes = packageNames
+    .map((packageName) => `  ${JSON.stringify(packageName)},`)
+    .join("\n");
+  return [
+    "# Generated only inside the disposable Pi compatibility snapshot.",
+    "[install]",
+    `minimumReleaseAge = ${MINIMUM_RELEASE_AGE_SECONDS}`,
+    "minimumReleaseAgeExcludes = [",
+    excludes,
+    "]",
+    "",
+  ].join("\n");
 }
 
 export function updatePiDevelopmentDependencies(
@@ -94,7 +138,16 @@ function readPackageJson(root: string): PackageJson {
 
 function npmJson(root: string, args: string[]): unknown {
   const output = run("npm", ["view", ...args, "--json"], { cwd: root, capture: true });
-  return JSON.parse(output);
+  return output ? JSON.parse(output) : null;
+}
+
+function npmDependencies(root: string, packageSpec: string): Record<string, unknown> {
+  const dependencies = npmJson(root, [packageSpec, "dependencies"]);
+  if (dependencies === null) return {};
+  if (typeof dependencies !== "object" || Array.isArray(dependencies)) {
+    throw new Error(`npm returned invalid dependencies for ${packageSpec}`);
+  }
+  return dependencies as Record<string, unknown>;
 }
 
 function getPinnedPiVersion(packageJson: PackageJson): string {
@@ -213,18 +266,14 @@ async function main(): Promise<void> {
     return;
   }
 
-  const latestDependencies = npmJson(root, [
-    `${PI_CODING_AGENT}@${decision.targetVersion}`,
-    "dependencies",
-  ]);
-  if (
-    typeof latestDependencies !== "object" ||
-    latestDependencies === null ||
-    typeof (latestDependencies as Record<string, unknown>).typebox !== "string"
-  ) {
+  const latestDependencies = npmDependencies(root, `${PI_CODING_AGENT}@${decision.targetVersion}`);
+  if (typeof latestDependencies.typebox !== "string") {
     throw new Error("npm returned no TypeBox dependency for the latest Pi release");
   }
-  const typeboxVersion = (latestDependencies as Record<string, string>).typebox;
+  const typeboxVersion = latestDependencies.typebox;
+  const releaseAgeExcludes = getPiReleaseAgeExcludes(latestDependencies, (packageName) =>
+    npmDependencies(root, `${packageName}@${decision.targetVersion}`),
+  );
 
   const safeVersion = decision.targetVersion.replace(/[^0-9A-Za-z._-]/g, "-");
   const sandbox = mkdtempSync(join(tmpdir(), `pi-compat-${safeVersion}-`));
@@ -244,6 +293,7 @@ async function main(): Promise<void> {
       join(snapshot, "package.json"),
       `${JSON.stringify(updatedPackageJson, null, 2)}\n`,
     );
+    writeFileSync(join(snapshot, "bunfig.toml"), formatCompatibilityBunfig(releaseAgeExcludes));
 
     run("bun", ["install"], { cwd: snapshot });
     run("just", ["typecheck-all"], { cwd: snapshot });
