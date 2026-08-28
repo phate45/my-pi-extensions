@@ -14,6 +14,7 @@ const EXPECTED_EXTENSION_ORDER = [
   "interactive-at-read",
   "skill-prompts",
   "skill-tool",
+  "subagents",
 ];
 
 describe("cc-like composite entrypoint", () => {

@@ -17,6 +17,8 @@ It exists so Pi customization lives in one repo instead of leaking across `~/.pi
 - preserves bundle-level feature flags and per-extension config across composed extensions
 - provides Claude-style `.claude/commands`, `.claude/skills`, and path-scoped `.claude/rules` compatibility with a custom `Skill` tool
 - integrates with Pi's native skill stack
+- bundles `pi-subagents` as Claude-compatible behavior, including its packaged skills and prompts
+- bundles Patty's background task tools while suppressing its redundant `agent_bg` tool
 - includes a generated example bundle config and test coverage for extension behavior
 
 ## Layout

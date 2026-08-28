@@ -10,6 +10,7 @@ import gitContext from "./git-context.js";
 import interactiveAtRead from "./interactive-at-read.js";
 import skillPrompts from "./skill-prompts.js";
 import skillTool from "./skill-tool.js";
+import subagents from "./subagents.js";
 
 export const ccLikeExtensions = [
   systemPromptMarkdownPreprocessor,
@@ -23,6 +24,7 @@ export const ccLikeExtensions = [
   interactiveAtRead,
   skillPrompts,
   skillTool,
+  subagents,
 ] as const;
 
 export default composeManagedExtensions(ccLikeExtensions);

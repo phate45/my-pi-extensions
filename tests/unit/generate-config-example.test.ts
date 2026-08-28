@@ -34,6 +34,7 @@ describe("generate-config example", () => {
       "interactive-at-read",
       "skill-prompts",
       "skill-tool",
+      "subagents",
       "system-prompt-markdown-preprocessor",
     ]);
   });

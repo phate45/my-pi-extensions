@@ -15,6 +15,9 @@
     "ask-user": {
       "enabled": true
     },
+    "background-tasks": {
+      "enabled": true
+    },
     "cc-context-local-files": {
       "enabled": true,
       "config": {
@@ -80,6 +83,9 @@
       "enabled": true
     },
     "skill-tool": {
+      "enabled": true
+    },
+    "subagents": {
       "enabled": true
     },
     "system-prompt-markdown-preprocessor": {
