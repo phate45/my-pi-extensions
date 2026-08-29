@@ -14,6 +14,23 @@ import { defineManagedExtension } from "../infra/lib/managed-extension.js";
 const MIN_OPTIONS = 2;
 const MAX_OPTIONS = 5;
 
+/**
+ * True when pi was launched with `--mode rpc`: the host implements the
+ * extension UI dialog bridge (select/confirm/input), so a question can
+ * actually round-trip even though the session has no terminal. This is how
+ * T3 Code drives pi. Mirrors `isHeadlessModeArgv` in bundle-config but keyed
+ * to the one mode with a dialog-capable host.
+ */
+function isRpcModeArgv(argv: string[]): boolean {
+  for (let index = 0; index < argv.length; index++) {
+    const arg = argv[index];
+    if (!arg) continue;
+    if (arg === "--mode") return argv[index + 1] === "rpc";
+    if (arg.startsWith("--mode=")) return arg.slice("--mode=".length) === "rpc";
+  }
+  return false;
+}
+
 const optionSchema = Type.Object({
   label: Type.String({ description: "Short display label for this option." }),
   description: Type.Optional(
@@ -77,7 +94,11 @@ export default defineManagedExtension({
   name: "ask-user",
   featureFlag: "myStuff",
   setup(pi: ExtensionAPI) {
-    if (isFeatureFlagEnabled("headless")) return;
+    // The headless flag still wins in general — print/json hosts have no way
+    // to surface a question. RPC mode is the exception: the host implements
+    // the dialog bridge, so the tool stays registered and execute() routes
+    // through ctx.ui.select instead of the TUI custom component.
+    if (isFeatureFlagEnabled("headless") && !isRpcModeArgv(process.argv.slice(2))) return;
 
     pi.registerTool({
       name: "ask_user",
@@ -103,6 +124,28 @@ export default defineManagedExtension({
           } satisfies AskUserDetails,
         });
 
+        if (ctx.mode === "rpc") {
+          // No TUI component factory is available over RPC, but the host's
+          // dialog bridge is: pi serializes ui.select as an
+          // extension_ui_request and resolves with the host's answer. Any
+          // value that is not one of our labels is the host's free-form
+          // answer (T3's question panel has its own custom-answer field, so
+          // the TUI's "Write my own answer…" entry is not needed here).
+          const answer = await ctx.ui.select(
+            params.question,
+            params.options.map((option) => option.label),
+            { signal },
+          );
+          if (signal?.aborted) return reply("Cancelled.");
+          if (answer === undefined) {
+            return reply("User dismissed the question without answering. Do not assume an answer.");
+          }
+          const match = params.options.findIndex((option) => option.label === answer);
+          if (match >= 0) {
+            return reply(`User selected option ${match + 1}: ${answer}`, answer);
+          }
+          return reply(`User wrote their own answer: ${answer}`, answer, true);
+        }
         if (ctx.mode !== "tui") {
           return reply("No interactive TUI is available. Ask the user in plain text instead.");
         }
