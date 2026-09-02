@@ -1,6 +1,10 @@
 import { afterEach, describe, expect, test } from "bun:test";
 import { existsSync } from "node:fs";
 import path from "node:path";
+import {
+  resetBundleConfigForTests,
+  setBundleConfigForTests,
+} from "../../extensions/infra/lib/bundle-config.js";
 import tensorxProvider, { formatPoolStatus } from "../../extensions/my-stuff/tensorx-provider.js";
 import { createMockExtensionAPI } from "../helpers/mock-extension-api.js";
 import { createTempPiEnv, writeJson } from "../helpers/temp-env.js";
@@ -8,6 +12,7 @@ import { createTempPiEnv, writeJson } from "../helpers/temp-env.js";
 const realAgentDir = process.env.PI_CODING_AGENT_DIR;
 
 afterEach(() => {
+  resetBundleConfigForTests();
   if (realAgentDir === undefined) delete process.env.PI_CODING_AGENT_DIR;
   else process.env.PI_CODING_AGENT_DIR = realAgentDir;
 });
@@ -87,6 +92,51 @@ describe("tensorx provider registration", () => {
       expect(deepseek?.compat.maxTokensField).toBe("max_tokens");
       expect(glm?.compat.thinkingFormat).toBeUndefined();
       expect(models).toHaveLength(8);
+    });
+  });
+});
+
+/**
+ * advisor drives pi with its own bundle settings
+ * (`advisorlib/advisor-pi-settings.json`) and turns the `myStuff` feature flag off,
+ * which disables every other extension in this folder. advisor selects `tensorx` as
+ * its provider, so this entrypoint has to stay outside that flag or every advisor run
+ * loses its model. Adding `featureFlag: "myStuff"` here to match the neighbouring
+ * files is the tidy-up that would break it.
+ */
+describe("tensorx provider under advisor's bundle settings", () => {
+  const ADVISOR_SETTINGS = {
+    featureFlags: { ccLike: true, myStuff: false, headless: true },
+    extensions: {
+      "background-tasks": { enabled: false },
+      "skill-tool": { enabled: false },
+      subagents: { enabled: false },
+    },
+  };
+
+  test("still registers when myStuff is off", async () => {
+    await withAgentDir({ keys: [{ key: "sk-one-aaaaaaaaaaaaaa" }, { key: "sk-two-bbbbbbbbbbbb" }] }, () => {
+      const { pi, providers } = createMockExtensionAPI();
+      setBundleConfigForTests(ADVISOR_SETTINGS);
+
+      tensorxProvider(pi);
+
+      expect(providers.has("tensorx")).toBe(true);
+      expect(typeof providers.get("tensorx")?.streamSimple).toBe("function");
+    });
+  });
+
+  test("an explicit per-extension disable still switches it off", async () => {
+    await withAgentDir({ keys: [{ key: "sk-one-aaaaaaaaaaaaaa" }] }, () => {
+      const { pi, providers } = createMockExtensionAPI();
+      setBundleConfigForTests({
+        ...ADVISOR_SETTINGS,
+        extensions: { ...ADVISOR_SETTINGS.extensions, "tensorx-provider": { enabled: false } },
+      });
+
+      tensorxProvider(pi);
+
+      expect(providers.has("tensorx")).toBe(false);
     });
   });
 });

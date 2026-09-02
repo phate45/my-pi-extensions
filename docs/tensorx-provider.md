@@ -63,8 +63,19 @@ Under `extensions.tensorx-provider.config` in bundle settings:
 | `invalidCooldownMs` | 600000 | Rest after a 401/403 |
 | `rotationBudgetMs` | 60000 | Ceiling on rotating and waiting before failing the request |
 
-Unlike its neighbours this extension carries no feature flag: it registers the default
-provider, so flag-disabling the personal extensions would leave pi with no model.
+## The missing feature flag
+
+Every other entrypoint in `extensions/my-stuff/` carries `featureFlag: "myStuff"`. This one
+does not, and that is load-bearing rather than an oversight.
+
+advisor drives pi with its own bundle settings (`advisorlib/advisor-pi-settings.json`),
+which set `myStuff: false` and so disable the whole folder. advisor also selects `tensorx`
+as its provider. Behind that flag, this extension would not register and every advisor run
+would fail to resolve its model.
+
+`tests/unit/tensorx-provider.test.ts` pins this: one case replays advisor's settings and
+asserts the provider still registers. Turning it off per-extension through
+`extensions.tensorx-provider.enabled` still works, which is the supported way to disable it.
 
 ## Inspecting
 

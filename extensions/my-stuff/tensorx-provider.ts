@@ -39,8 +39,9 @@ export function formatPoolStatus(rows: KeyStatus[], keysPath: string): string {
 
 export default defineManagedExtension({
   name: "tensorx-provider",
-  // Deliberately not behind the myStuff feature flag: this registers the default
-  // provider, so flag-disabling the personal extensions would leave pi with no model.
+  // No feature flag, unlike every other entrypoint in this folder. advisor runs pi
+  // with `myStuff: false` and selects tensorx as its provider, so putting this behind
+  // that flag would leave every advisor run without a model.
   config: tensorxProviderConfig,
   setup(pi: ExtensionAPI, getConfig: () => TensorxProviderConfig) {
     const config = getConfig();
