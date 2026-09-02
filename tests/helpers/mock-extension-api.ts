@@ -8,6 +8,7 @@ export type MockExtensionAPI = {
   messageRenderers: Map<string, Function>;
   tools: unknown[];
   commands: string[];
+  providers: Map<string, Record<string, unknown>>;
   sentMessages: unknown[];
   sentUserMessages: unknown[];
 };
@@ -17,6 +18,7 @@ export function createMockExtensionAPI(): MockExtensionAPI {
   const messageRenderers = new Map<string, Function>();
   const tools: unknown[] = [];
   const commands: string[] = [];
+  const providers = new Map<string, Record<string, unknown>>();
   const sentMessages: unknown[] = [];
   const sentUserMessages: unknown[] = [];
 
@@ -68,7 +70,14 @@ export function createMockExtensionAPI(): MockExtensionAPI {
     getThemes() {
       return [];
     },
-    registerProvider() {},
+    registerProvider(nameOrProvider: unknown, config?: unknown) {
+      if (typeof nameOrProvider === "string") {
+        providers.set(nameOrProvider, (config ?? {}) as Record<string, unknown>);
+        return;
+      }
+      const provider = nameOrProvider as { id?: string; name?: string };
+      providers.set(provider.id ?? provider.name ?? "", provider as Record<string, unknown>);
+    },
     setThinkingLevel() {},
     getThinkingLevel() {
       return "medium" as const;
@@ -81,6 +90,7 @@ export function createMockExtensionAPI(): MockExtensionAPI {
     messageRenderers,
     tools,
     commands,
+    providers,
     sentMessages,
     sentUserMessages,
   };

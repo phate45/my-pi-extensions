@@ -86,6 +86,7 @@ After `just compat` passes, run `just compat-update` to repeat the same check an
 - `docs/skill-stack.md`
 - `docs/rules-stack.md`
 - `docs/system-prompt.md`
+- `docs/tensorx-provider.md`
 - `docs/web-research.md`
 
 ## No guarantees

@@ -91,6 +91,14 @@
     "system-prompt-markdown-preprocessor": {
       "enabled": true
     },
+    "tensorx-provider": {
+      "enabled": true,
+      "config": {
+        "cooldownMs": 20000,
+        "invalidCooldownMs": 600000,
+        "rotationBudgetMs": 60000
+      }
+    },
     "tps-tracker": {
       "enabled": true
     },
