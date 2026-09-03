@@ -53,6 +53,23 @@ The 429 status is read through a fetch wrapped around the request. pi-ai invokes
 `onResponse` only after the SDK call resolves, so on a 429 the SDK throws first and the
 status never surfaces there.
 
+## Where the leased key has to go
+
+A lease sets both `apiKey` and the `Authorization` header on the attempt, and setting only
+the first sends the wrong key.
+
+The registration declares `authHeader: true`, so before the wrapper is ever called pi
+resolves its own credential (CLI, then `auth.json`, then env) and puts `Authorization:
+Bearer <that key>` in the request headers. pi-ai merges caller headers over its client
+defaults, and openai-node ranks `defaultHeaders` above the key the client was constructed
+with. An inherited header therefore outranks the lease and pins every attempt to one key,
+which looks exactly like rotation working: the pool leases three keys, three requests go
+out, and all three carry the first.
+
+`tests/unit/rotating-stream-wire.test.ts` drives the real pi-ai adapter and asserts the
+`Authorization` that reaches an observed request. Asserting `options.apiKey` against a
+stubbed adapter cannot see any of this.
+
 ## Config
 
 Under `extensions.tensorx-provider.config` in bundle settings:

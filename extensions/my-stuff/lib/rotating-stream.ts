@@ -22,6 +22,7 @@ import {
   createAssistantMessageEventStream,
   type FetchFunction,
   type Model,
+  type ProviderHeaders,
   type SimpleStreamOptions,
   type StreamFunction,
 } from "@earendil-works/pi-ai";
@@ -96,6 +97,25 @@ export function classifyFailure(observed: Observed, message: string | undefined)
   if (RATE_LIMITED.test(message)) return { outcome: "rate_limited" };
   if (REJECTED_KEY.test(message)) return { outcome: "invalid" };
   return undefined;
+}
+
+/**
+ * Put the leased key in the Authorization header as well as in `apiKey`.
+ *
+ * A provider registered with `authHeader: true` receives an Authorization for the
+ * credential pi resolved, and pi-ai merges those headers over the client defaults
+ * while the SDK ranks default headers above the key the client was built with. The
+ * leased key reaches the wire only if it also owns this header. Existing entries go
+ * by case-insensitive name, because the merge downstream is case-sensitive and two
+ * spellings would both survive it.
+ */
+function withLeasedAuth(headers: ProviderHeaders | undefined, key: string): ProviderHeaders {
+  const merged: ProviderHeaders = {};
+  for (const [name, value] of Object.entries(headers ?? {})) {
+    if (name.toLowerCase() !== "authorization") merged[name] = value;
+  }
+  merged.Authorization = `Bearer ${key}`;
+  return merged;
 }
 
 function observingFetch(base: FetchFunction | undefined, observed: Observed, now: () => number): FetchFunction {
@@ -243,6 +263,7 @@ export function createRotatingStreamSimple(config: RotatingStreamConfig) {
             streamSimple(model, context, {
               ...options,
               apiKey: lease.key,
+              headers: withLeasedAuth(options?.headers, lease.key),
               fetch: observingFetch(options?.fetch, observed, now),
               // This wrapper owns retrying, and pi-ai's own retry would burn the
               // backoff on the key that just failed.

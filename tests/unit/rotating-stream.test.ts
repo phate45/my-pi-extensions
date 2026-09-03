@@ -7,6 +7,7 @@ import {
   createAssistantMessageEventStream,
   type FetchFunction,
   type Model,
+  type ProviderHeaders,
   type SimpleStreamOptions,
   type StreamFunction,
 } from "@earendil-works/pi-ai";
@@ -74,6 +75,7 @@ type AttemptSpec = {
  */
 function createFakeApi(specs: AttemptSpec[]) {
   const usedKeys: string[] = [];
+  const usedHeaders: (ProviderHeaders | undefined)[] = [];
   let current: AttemptSpec = specs[0]!;
 
   const baseFetch = (async () => {
@@ -85,6 +87,7 @@ function createFakeApi(specs: AttemptSpec[]) {
   const streamSimple: StreamFunction<Api, SimpleStreamOptions> = (_model, _context, options) => {
     current = specs[Math.min(usedKeys.length, specs.length - 1)]!;
     usedKeys.push(options?.apiKey ?? "<none>");
+    usedHeaders.push(options?.headers);
     const spec = current;
     const stream = createAssistantMessageEventStream();
 
@@ -136,7 +139,14 @@ function createFakeApi(specs: AttemptSpec[]) {
     return stream;
   };
 
-  return { streamSimple, baseFetch, usedKeys };
+  return { streamSimple, baseFetch, usedKeys, usedHeaders };
+}
+
+/** Every Authorization on a request, whatever case it was written in. */
+function authorizations(headers: ProviderHeaders | undefined): (string | null)[] {
+  return Object.entries(headers ?? {})
+    .filter(([name]) => name.toLowerCase() === "authorization")
+    .map(([, value]) => value);
 }
 
 function fakeClock(start = 1_000) {
@@ -246,6 +256,54 @@ describe("rotating stream on a rate limit", () => {
     await collect(rotating(model, context, { fetch: api.baseFetch }));
 
     expect(notices).toEqual(["tensorx: rate limited on one, rotating"]);
+  });
+});
+
+describe("rotating stream and the request credential", () => {
+  test("carries the leased key in the Authorization header, not only in apiKey", async () => {
+    const { rotating, api } = run([{ status: 429, error: "429 rate limit" }, { status: 200 }]);
+
+    await collect(rotating(model, context, { fetch: api.baseFetch }));
+
+    expect(authorizations(api.usedHeaders[0])).toEqual([`Bearer ${keys[0]!.key}`]);
+    expect(authorizations(api.usedHeaders[1])).toEqual([`Bearer ${keys[1]!.key}`]);
+  });
+
+  test("replaces the Authorization the caller resolved and keeps its other headers", async () => {
+    const { rotating, api } = run([{ status: 429, error: "429 rate limit" }, { status: 200 }]);
+
+    await collect(
+      rotating(model, context, {
+        fetch: api.baseFetch,
+        headers: { Authorization: "Bearer sk-resolved-elsewhere", "x-trace": "keep-me" },
+      }),
+    );
+
+    expect(authorizations(api.usedHeaders[0])).toEqual([`Bearer ${keys[0]!.key}`]);
+    expect(authorizations(api.usedHeaders[1])).toEqual([`Bearer ${keys[1]!.key}`]);
+    expect(api.usedHeaders[1]?.["x-trace"]).toBe("keep-me");
+  });
+
+  test("replaces a lowercase authorization rather than sending both", async () => {
+    const { rotating, api } = run([{ status: 200 }]);
+
+    await collect(
+      rotating(model, context, {
+        fetch: api.baseFetch,
+        headers: { authorization: "Bearer sk-resolved-elsewhere" },
+      }),
+    );
+
+    expect(authorizations(api.usedHeaders[0])).toEqual([`Bearer ${keys[0]!.key}`]);
+  });
+
+  test("leaves the caller's headers object untouched", async () => {
+    const { rotating, api } = run([{ status: 200 }]);
+    const headers = { Authorization: "Bearer sk-resolved-elsewhere" };
+
+    await collect(rotating(model, context, { fetch: api.baseFetch, headers }));
+
+    expect(headers).toEqual({ Authorization: "Bearer sk-resolved-elsewhere" });
   });
 });
 
