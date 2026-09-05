@@ -40,14 +40,64 @@ type CatalogEntry = {
 // contextWindow is set per model rather than shared. The Qwen entries match the 256K
 // window TensorX advertises; the rest are held at 512K against an advertised 1M.
 const MODELS: CatalogEntry[] = [
-  { id: "deepseek/deepseek-v4-flash-0731", name: "DeepSeek V4 Flash 0731", input: ["text"], contextWindow: 512_000, cost: { input: 0.25, output: 0.3, cacheRead: 0.06, cacheWrite: 0.25 }, thinking: DEEPSEEK_THINKING },
-  { id: "deepseek/deepseek-v4-pro", name: "DeepSeek V4 Pro", input: ["text"], contextWindow: 512_000, cost: { input: 1.75, output: 3.5, cacheRead: 0.44, cacheWrite: 1.75 }, thinking: DEEPSEEK_THINKING },
-  { id: "minimax/minimax-m3", name: "MiniMax M3", input: ["text", "image"], contextWindow: 512_000, cost: { input: 0.4, output: 2.0, cacheRead: 0.1, cacheWrite: 0.4 } },
-  { id: "qwen/qwen3.5-9b", name: "Qwen3.5 9B", input: ["text"], contextWindow: 256_000, cost: { input: 0.15, output: 0.2, cacheRead: 0.04, cacheWrite: 0.15 } },
-  { id: "qwen/qwen3.8-flash-next", name: "Qwen3.8 Flash Next", input: ["text", "image"], contextWindow: 256_000, cost: { input: 0.2, output: 0.5, cacheRead: 0.05, cacheWrite: 0.2 } },
-  { id: "z-ai/glm-5.3-flash", name: "GLM 5.3 Flash", input: ["text", "image"], contextWindow: 999_999, cost: { input: 0.2, output: 0.5, cacheRead: 0.05, cacheWrite: 0.2 } },
-  { id: "z-ai/glm-5.3", name: "GLM 5.3", input: ["text", "image"], contextWindow: 999_999, cost: { input: 1.75, output: 4.5, cacheRead: 0.44, cacheWrite: 1.75 } },
-  { id: "moonshotai/kimi-k3", name: "Kimi K3", input: ["text", "image"], contextWindow: 999_999, cost: { input: 3, output: 15, cacheRead: 0.75, cacheWrite: 3 } },
+  {
+    id: "deepseek/deepseek-v4-flash-0731",
+    name: "DeepSeek V4 Flash 0731",
+    input: ["text"],
+    contextWindow: 512_000,
+    cost: { input: 0.25, output: 0.3, cacheRead: 0.06, cacheWrite: 0.25 },
+    thinking: DEEPSEEK_THINKING,
+  },
+  {
+    id: "deepseek/deepseek-v4-pro",
+    name: "DeepSeek V4 Pro",
+    input: ["text"],
+    contextWindow: 512_000,
+    cost: { input: 1.75, output: 3.5, cacheRead: 0.44, cacheWrite: 1.75 },
+    thinking: DEEPSEEK_THINKING,
+  },
+  {
+    id: "minimax/minimax-m3",
+    name: "MiniMax M3",
+    input: ["text", "image"],
+    contextWindow: 512_000,
+    cost: { input: 0.4, output: 2.0, cacheRead: 0.1, cacheWrite: 0.4 },
+  },
+  {
+    id: "qwen/qwen3.5-9b",
+    name: "Qwen3.5 9B",
+    input: ["text"],
+    contextWindow: 256_000,
+    cost: { input: 0.15, output: 0.2, cacheRead: 0.04, cacheWrite: 0.15 },
+  },
+  {
+    id: "qwen/qwen3.8-flash-next",
+    name: "Qwen3.8 Flash Next",
+    input: ["text", "image"],
+    contextWindow: 256_000,
+    cost: { input: 0.2, output: 0.5, cacheRead: 0.05, cacheWrite: 0.2 },
+  },
+  {
+    id: "z-ai/glm-5.3-flash",
+    name: "GLM 5.3 Flash",
+    input: ["text", "image"],
+    contextWindow: 999_999,
+    cost: { input: 0.2, output: 0.5, cacheRead: 0.05, cacheWrite: 0.2 },
+  },
+  {
+    id: "z-ai/glm-5.3",
+    name: "GLM 5.3",
+    input: ["text", "image"],
+    contextWindow: 999_999,
+    cost: { input: 1.75, output: 4.5, cacheRead: 0.44, cacheWrite: 1.75 },
+  },
+  {
+    id: "moonshotai/kimi-k3",
+    name: "Kimi K3",
+    input: ["text", "image"],
+    contextWindow: 999_999,
+    cost: { input: 3, output: 15, cacheRead: 0.75, cacheWrite: 3 },
+  },
 ];
 
 export function tensorxModels(): ProviderModelConfig[] {

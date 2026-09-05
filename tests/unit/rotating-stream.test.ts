@@ -386,10 +386,13 @@ describe("rotating stream when the pool runs dry", () => {
   });
 
   test("fails with a message naming the attempts and the last error", async () => {
-    const { rotating, api } = run([{ status: 429, error: "429 quota exceeded", retryAfter: "600" }], {
-      poolKeys: [keys[0]!, keys[1]!],
-      budgetMs: 10_000,
-    });
+    const { rotating, api } = run(
+      [{ status: 429, error: "429 quota exceeded", retryAfter: "600" }],
+      {
+        poolKeys: [keys[0]!, keys[1]!],
+        budgetMs: 10_000,
+      },
+    );
     const stream = rotating(model, context, { fetch: api.baseFetch });
 
     await collect(stream);
@@ -451,7 +454,9 @@ describe("parseRetryAfterMs", () => {
   const now = Date.parse("2026-09-02T22:00:00Z");
 
   test("prefers retry-after-ms", () => {
-    expect(parseRetryAfterMs(new Headers({ "retry-after-ms": "1500", "retry-after": "60" }), now)).toBe(1500);
+    expect(
+      parseRetryAfterMs(new Headers({ "retry-after-ms": "1500", "retry-after": "60" }), now),
+    ).toBe(1500);
   });
 
   test("reads seconds", () => {
@@ -459,12 +464,16 @@ describe("parseRetryAfterMs", () => {
   });
 
   test("reads an HTTP date", () => {
-    expect(parseRetryAfterMs(new Headers({ "retry-after": "Wed, 02 Sep 2026 22:00:30 GMT" }), now)).toBe(30_000);
+    expect(
+      parseRetryAfterMs(new Headers({ "retry-after": "Wed, 02 Sep 2026 22:00:30 GMT" }), now),
+    ).toBe(30_000);
   });
 
   test("ignores a header that is absent, zero, or in the past", () => {
     expect(parseRetryAfterMs(new Headers(), now)).toBeUndefined();
     expect(parseRetryAfterMs(new Headers({ "retry-after": "0" }), now)).toBeUndefined();
-    expect(parseRetryAfterMs(new Headers({ "retry-after": "Wed, 02 Sep 2026 21:59:00 GMT" }), now)).toBeUndefined();
+    expect(
+      parseRetryAfterMs(new Headers({ "retry-after": "Wed, 02 Sep 2026 21:59:00 GMT" }), now),
+    ).toBeUndefined();
   });
 });

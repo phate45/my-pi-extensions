@@ -104,10 +104,13 @@ function realSleep(ms: number, signal?: AbortSignal): Promise<void> {
       clearTimeout(timer);
       reject(abortError());
     };
-    const timer = setTimeout(() => {
-      signal?.removeEventListener("abort", onAbort);
-      resolve();
-    }, Math.max(0, ms));
+    const timer = setTimeout(
+      () => {
+        signal?.removeEventListener("abort", onAbort);
+        resolve();
+      },
+      Math.max(0, ms),
+    );
     signal?.addEventListener("abort", onAbort, { once: true });
   });
 }
@@ -187,10 +190,7 @@ export class KeyPool {
         throw new PoolUnavailableError(earliest - now);
       }
       const remaining = earliest - now;
-      await this.sleep(
-        Math.max(MIN_WAIT_SLICE_MS, Math.min(remaining, MAX_WAIT_SLICE_MS)),
-        signal,
-      );
+      await this.sleep(Math.max(MIN_WAIT_SLICE_MS, Math.min(remaining, MAX_WAIT_SLICE_MS)), signal);
     }
   }
 

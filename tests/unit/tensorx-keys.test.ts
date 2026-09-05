@@ -33,7 +33,10 @@ describe("normalizeKeys", () => {
 
   test("drops a duplicate key so one quota is not counted as two lanes", () => {
     const { keys, warnings } = normalizeKeys({
-      keys: [{ key: "sk-same", label: "a" }, { key: "sk-same", label: "b" }],
+      keys: [
+        { key: "sk-same", label: "a" },
+        { key: "sk-same", label: "b" },
+      ],
     });
 
     expect(keys).toHaveLength(1);
@@ -102,7 +105,10 @@ describe("loadTensorxKeys", () => {
     await withAgentDir(async (agentDir) => {
       await writeJson(path.join(agentDir, "auth.json"), { tensorx: { key: "sk-from-auth" } });
       await writeJson(path.join(agentDir, "tensorx-keys.json"), {
-        keys: [{ key: "sk-one", label: "one" }, { key: "sk-two", label: "two" }],
+        keys: [
+          { key: "sk-one", label: "one" },
+          { key: "sk-two", label: "two" },
+        ],
       });
 
       const loaded = loadTensorxKeys(agentDir);

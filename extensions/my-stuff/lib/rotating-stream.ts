@@ -84,10 +84,16 @@ export function parseRetryAfterMs(headers: Headers, now: number): number | undef
  * rejected credential rotates; anything else belongs to pi's own retry, and
  * rotating on it would burn the pool on a fault no other key can fix.
  */
-export function classifyFailure(observed: Observed, message: string | undefined): Rotation | undefined {
+export function classifyFailure(
+  observed: Observed,
+  message: string | undefined,
+): Rotation | undefined {
   if (observed.status !== undefined) {
     if (observed.status === 429) {
-      return { outcome: "rate_limited", ...(observed.retryAfterMs ? { cooldownMs: observed.retryAfterMs } : {}) };
+      return {
+        outcome: "rate_limited",
+        ...(observed.retryAfterMs ? { cooldownMs: observed.retryAfterMs } : {}),
+      };
     }
     if (observed.status === 401 || observed.status === 403) return { outcome: "invalid" };
     return undefined;
@@ -118,7 +124,11 @@ function withLeasedAuth(headers: ProviderHeaders | undefined, key: string): Prov
   return merged;
 }
 
-function observingFetch(base: FetchFunction | undefined, observed: Observed, now: () => number): FetchFunction {
+function observingFetch(
+  base: FetchFunction | undefined,
+  observed: Observed,
+  now: () => number,
+): FetchFunction {
   const inner = base ?? globalThis.fetch;
   return async (input, init) => {
     const response = await inner(input, init);
@@ -245,7 +255,11 @@ export function createRotatingStreamSimple(config: RotatingStreamConfig) {
           lease = await pool.acquire(options?.signal, deadlineAt);
         } catch (error) {
           if (isAbort(error)) {
-            out.push({ type: "error", reason: "aborted", error: terminalMessage(model, "aborted") });
+            out.push({
+              type: "error",
+              reason: "aborted",
+              error: terminalMessage(model, "aborted"),
+            });
             out.end();
             return;
           }
@@ -303,7 +317,11 @@ export function createRotatingStreamSimple(config: RotatingStreamConfig) {
           );
         } catch (error) {
           if (options?.signal?.aborted || isAbort(error)) {
-            out.push({ type: "error", reason: "aborted", error: terminalMessage(model, "aborted") });
+            out.push({
+              type: "error",
+              reason: "aborted",
+              error: terminalMessage(model, "aborted"),
+            });
             out.end();
             return;
           }
@@ -311,7 +329,11 @@ export function createRotatingStreamSimple(config: RotatingStreamConfig) {
           out.push({
             type: "error",
             reason: "error",
-            error: terminalMessage(model, "error", error instanceof Error ? error.message : String(error)),
+            error: terminalMessage(
+              model,
+              "error",
+              error instanceof Error ? error.message : String(error),
+            ),
           });
           out.end();
           return;

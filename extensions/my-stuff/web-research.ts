@@ -13,8 +13,8 @@ import {
 } from "./lib/web-research-config.js";
 
 const DEPTH_MODEL = {
-  fast: "gpt-5.4-mini",
-  deep: "gpt-5.4",
+  fast: "gpt-5.6-luna",
+  deep: "gpt-5.6-terra",
 } as const;
 
 const researchSchema = {

@@ -57,7 +57,8 @@ function normalizeEntry(raw: unknown, index: number): PoolKey | undefined {
   if (!isRecord(raw)) return undefined;
   const key = raw.key;
   if (typeof key !== "string" || key.length === 0) return undefined;
-  const label = typeof raw.label === "string" && raw.label.length > 0 ? raw.label : `key-${index + 1}`;
+  const label =
+    typeof raw.label === "string" && raw.label.length > 0 ? raw.label : `key-${index + 1}`;
   return { key, label, ...(raw.enabled === false ? { enabled: false } : {}) };
 }
 
@@ -76,7 +77,9 @@ export function normalizeKeys(raw: unknown): { keys: PoolKey[]; warnings: string
       return;
     }
     if (seen.has(normalized.key)) {
-      warnings.push(`ignored key entry ${index + 1} ("${normalized.label}"): duplicate of an earlier key`);
+      warnings.push(
+        `ignored key entry ${index + 1} ("${normalized.label}"): duplicate of an earlier key`,
+      );
       return;
     }
     seen.add(normalized.key);

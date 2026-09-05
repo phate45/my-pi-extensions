@@ -41,7 +41,12 @@ async function withAgentDir(
 describe("tensorx provider registration", () => {
   test("registers the catalog with rotation once the pool holds two keys", async () => {
     await withAgentDir(
-      { keys: [{ key: "sk-one-aaaaaaaaaaaaaa", label: "one" }, { key: "sk-two-bbbbbbbbbbbbbb", label: "two" }] },
+      {
+        keys: [
+          { key: "sk-one-aaaaaaaaaaaaaa", label: "one" },
+          { key: "sk-two-bbbbbbbbbbbbbb", label: "two" },
+        ],
+      },
       () => {
         const { pi, providers, commands } = createMockExtensionAPI();
 
@@ -83,12 +88,17 @@ describe("tensorx provider registration", () => {
 
       tensorxProvider(pi);
 
-      const models = providers.get("tensorx")?.models as { id: string; compat: Record<string, unknown> }[];
+      const models = providers.get("tensorx")?.models as {
+        id: string;
+        compat: Record<string, unknown>;
+      }[];
       const deepseek = models.find((entry) => entry.id === "deepseek/deepseek-v4-pro");
       const glm = models.find((entry) => entry.id === "z-ai/glm-5.3-flash");
 
       expect(deepseek?.compat.thinkingFormat).toBe("chat-template");
-      expect(deepseek?.compat.chatTemplateKwargs).toEqual({ thinking: { $var: "thinking.enabled" } });
+      expect(deepseek?.compat.chatTemplateKwargs).toEqual({
+        thinking: { $var: "thinking.enabled" },
+      });
       expect(deepseek?.compat.maxTokensField).toBe("max_tokens");
       expect(glm?.compat.thinkingFormat).toBeUndefined();
       expect(models).toHaveLength(8);
@@ -115,15 +125,18 @@ describe("tensorx provider under advisor's bundle settings", () => {
   };
 
   test("still registers when myStuff is off", async () => {
-    await withAgentDir({ keys: [{ key: "sk-one-aaaaaaaaaaaaaa" }, { key: "sk-two-bbbbbbbbbbbb" }] }, () => {
-      const { pi, providers } = createMockExtensionAPI();
-      setBundleConfigForTests(ADVISOR_SETTINGS);
+    await withAgentDir(
+      { keys: [{ key: "sk-one-aaaaaaaaaaaaaa" }, { key: "sk-two-bbbbbbbbbbbb" }] },
+      () => {
+        const { pi, providers } = createMockExtensionAPI();
+        setBundleConfigForTests(ADVISOR_SETTINGS);
 
-      tensorxProvider(pi);
+        tensorxProvider(pi);
 
-      expect(providers.has("tensorx")).toBe(true);
-      expect(typeof providers.get("tensorx")?.streamSimple).toBe("function");
-    });
+        expect(providers.has("tensorx")).toBe(true);
+        expect(typeof providers.get("tensorx")?.streamSimple).toBe("function");
+      },
+    );
   });
 
   test("an explicit per-extension disable still switches it off", async () => {
