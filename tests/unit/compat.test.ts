@@ -37,22 +37,25 @@ describe("compatibility runtime smoke test", () => {
 });
 
 describe("compatibility supply-chain quarantine", () => {
-  test("exempts only the recursive Pi release train", () => {
+  test("exempts the recursive @earendil-works dependency closure", () => {
     const dependencies = new Map<string, Record<string, string>>([
-      ["@earendil-works/pi-ai", { "@earendil-works/pi-telemetry": "^0.84.3" }],
-      ["@earendil-works/pi-client", { "@earendil-works/pi-protocol": "^0.84.3" }],
+      ["@earendil-works/pi-ai", { "@earendil-works/pi-telemetry": "^0.85.1" }],
+      ["@earendil-works/pi-client", { "@earendil-works/pi-protocol": "^0.85.1" }],
+      ["@earendil-works/chord", { yargs: "^17.7.2" }],
     ]);
 
     expect(
       getPiReleaseAgeExcludes(
         {
-          "@earendil-works/pi-ai": "^0.84.3",
-          "@earendil-works/pi-client": "^0.84.3",
+          "@earendil-works/pi-ai": "^0.85.1",
+          "@earendil-works/pi-client": "^0.85.1",
+          "@earendil-works/chord": "^0.85.1",
           chalk: "^5.6.2",
         },
         (packageName) => dependencies.get(packageName) ?? {},
       ),
     ).toEqual([
+      "@earendil-works/chord",
       "@earendil-works/pi-ai",
       "@earendil-works/pi-client",
       "@earendil-works/pi-coding-agent",

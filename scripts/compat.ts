@@ -11,7 +11,12 @@ const PI_DEVELOPMENT_PACKAGES = [
   PI_CODING_AGENT,
   "@earendil-works/pi-tui",
 ] as const;
-const PI_PACKAGE_PREFIX = "@earendil-works/pi-";
+// Trust boundary for the compat sandbox's fresh-release exemption: any package
+// published under the @earendil-works npm scope is treated as part of Pi's
+// release train. Scoped to the org rather than the "pi-" name prefix because
+// Pi 0.85+ ships new org packages (e.g. @earendil-works/chord) that are
+// versioned and released in lockstep with the pi-* packages.
+const ORG_PACKAGE_PREFIX = "@earendil-works/";
 const MINIMUM_RELEASE_AGE_SECONDS = 5 * 24 * 60 * 60;
 
 type PackageJson = {
@@ -41,7 +46,7 @@ export function getPiReleaseAgeExcludes(
 ): string[] {
   const packages = new Set(
     [...PI_DEVELOPMENT_PACKAGES, ...Object.keys(codingAgentDependencies)].filter((packageName) =>
-      packageName.startsWith(PI_PACKAGE_PREFIX),
+      packageName.startsWith(ORG_PACKAGE_PREFIX),
     ),
   );
   const expanded = new Set([PI_CODING_AGENT]);
@@ -53,7 +58,7 @@ export function getPiReleaseAgeExcludes(
     expanded.add(packageName);
 
     for (const dependency of Object.keys(loadDependencies(packageName))) {
-      if (!dependency.startsWith(PI_PACKAGE_PREFIX) || packages.has(dependency)) continue;
+      if (!dependency.startsWith(ORG_PACKAGE_PREFIX) || packages.has(dependency)) continue;
       packages.add(dependency);
       pending.push(dependency);
     }
