@@ -56,8 +56,10 @@ compat-update:
     bun run scripts/compat.ts --apply
 
 # Run all project tests.
+# --timeout guards the first pi spawn in a fresh checkout/compat sandbox:
+# transforming the uncached bundle extensions can exceed the 5s default.
 test:
-    bun test tests
+    bun test --timeout 30000 tests
 
 # Run unit tests only.
 test-unit:
