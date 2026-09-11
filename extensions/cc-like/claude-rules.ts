@@ -1,6 +1,7 @@
 import type { ExtensionAPI } from "@earendil-works/pi-coding-agent";
 import { Text } from "@earendil-works/pi-tui";
 import { defineManagedExtension } from "../infra/lib/managed-extension.js";
+import { createTerminalToolTurnTracker } from "../infra/lib/terminal-tool-turn.js";
 import { discoverClaudeResourceDirs } from "./lib/claude-resource-discovery.js";
 import { type ClaudeRulesConfig, claudeRulesConfig } from "./lib/claude-resource-load-config.js";
 import {
@@ -53,6 +54,7 @@ export default defineManagedExtension({
     const injectedRuleIds = new Set<string>();
     const pendingRules = new Map<string, PendingRule>();
     const reportedDiagnostics = new Set<string>();
+    const terminalToolTurn = createTerminalToolTurnTracker(pi);
 
     pi.registerMessageRenderer<ClaudeRulesMessageDetails>(
       CLAUDE_RULES_MESSAGE_TYPE,
@@ -157,6 +159,7 @@ export default defineManagedExtension({
     });
 
     pi.on("before_agent_start", async (_event, ctx) => {
+      terminalToolTurn.reset();
       await reloadRules(ctx.cwd);
       const projectRoot = resolveProjectRoot(ctx.cwd);
       const startupTarget = extractClaudeRuleTargetForCwd(ctx.cwd, projectRoot);
@@ -178,6 +181,7 @@ export default defineManagedExtension({
 
     pi.on("tool_call", async (event, ctx) => {
       if (!FILE_TOOLS.has(event.toolName)) return;
+      if (event.toolName === "read" && !getConfig().onFileRead) return;
       const rawPath = (event.input as { path?: unknown }).path;
       if (typeof rawPath !== "string") return;
 
@@ -210,7 +214,7 @@ export default defineManagedExtension({
 
     pi.on("turn_end", () => {
       const pending = [...pendingRules.values()];
-      if (pending.length === 0) return;
+      if (pending.length === 0 || terminalToolTurn.concluded()) return;
 
       pi.sendMessage(createInjection(pending), { deliverAs: "steer" });
       for (const entry of pending) injectedRuleIds.add(entry.rule.id);

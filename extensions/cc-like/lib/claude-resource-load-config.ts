@@ -24,7 +24,9 @@ export type CcResourcePathsConfig = {
   skills: ClaudeResourceSourceConfig;
 };
 
-export type ClaudeRulesConfig = ClaudeResourceSourceConfig;
+export type ClaudeRulesConfig = ClaudeResourceSourceConfig & {
+  onFileRead: boolean;
+};
 
 export const DEFAULT_CLAUDE_FILE_SOURCE_CONFIG: ClaudeFileSourceConfig = {
   global: true,
@@ -51,7 +53,10 @@ export const DEFAULT_CC_RESOURCE_PATHS_CONFIG: CcResourcePathsConfig = {
   skills: DEFAULT_CLAUDE_RESOURCE_SOURCE_CONFIG,
 };
 
-export const DEFAULT_CLAUDE_RULES_CONFIG: ClaudeRulesConfig = DEFAULT_CLAUDE_RESOURCE_SOURCE_CONFIG;
+export const DEFAULT_CLAUDE_RULES_CONFIG: ClaudeRulesConfig = {
+  ...DEFAULT_CLAUDE_RESOURCE_SOURCE_CONFIG,
+  onFileRead: true,
+};
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
@@ -118,7 +123,10 @@ export function normalizeClaudeRulesConfig(
   raw: Record<string, unknown> | undefined,
   defaults: ClaudeRulesConfig = DEFAULT_CLAUDE_RULES_CONFIG,
 ): ClaudeRulesConfig {
-  return normalizeClaudeResourceSourceConfig(raw, defaults);
+  return {
+    ...normalizeClaudeResourceSourceConfig(raw, defaults),
+    onFileRead: normalizeBoolean(raw?.onFileRead, defaults.onFileRead),
+  };
 }
 
 export const ccContextLocalFilesConfig = defineExtensionConfig({

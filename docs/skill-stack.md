@@ -1,6 +1,6 @@
 ---
 created: 2026-06-21T10:13:05
-modified: 2026-08-09T21:14:20
+modified: 2026-09-11T17:48:11
 ---
 
 # Skill Stack
@@ -45,7 +45,7 @@ This affects `.claude/commands`, `.claude/skills`, and Claude skill execution/di
 
 Package-local `.claude/skills` directories below the project root activate when Pi starts inside their subtree, or lazily when `read`, `edit`, or `write` targets their subtree. Ancestor package skill directories compose while sibling package directories stay inactive. Activated skills use stable qualified names such as `packages/api:deploy`; this prevents their meaning from changing when another package provides the same frontmatter name.
 
-Pi's native skill resource loader only discovers skills at startup or reload, so lazy package skills stay in the bundle's in-memory skill registry rather than becoming native Pi skills. The `skill` tool remains one stable dispatcher and its startup skill list never changes mid-session. Each activation injects a single context message wrapped in `<system-reminder><skill-discovery>…</skill-discovery></system-reminder>`; the tool and `/skill:name` router can then resolve the newly announced qualified names.
+Pi's native skill resource loader only discovers skills at startup or reload, so lazy package skills stay in the bundle's in-memory skill registry rather than becoming native Pi skills. The `skill` tool remains one stable dispatcher and its startup skill list never changes mid-session. Each activation injects a single context message wrapped in `<system-reminder><skill-discovery>…</skill-discovery></system-reminder>`; the tool and `/skill:name` router can then resolve the newly announced qualified names. A terminal tool batch suppresses this end-of-turn injection so skill discovery cannot restart a concluded agent; pending discoveries remain available for a later turn.
 
 ## Invariants
 
@@ -76,6 +76,7 @@ After changes, confirm:
 - disabled global/project Claude resource sources stop contributing paths
 - package-local skills activate from targeted file ancestry, compose with parents, and do not leak from siblings
 - native skill inventory and tool definition stay stable while discovery messages announce package skills
+- terminal tool batches retain pending discovery without injecting a steer into a concluded agent
 - activated package skills resolve identically through the model-facing tool and `/skill:name`
 - `.claude/commands` still load, but run through the invocation pipeline instead of inline prompt expansion
 - `.claude/commands` render as compact invocation rows in the UI instead of visible inline XML payloads

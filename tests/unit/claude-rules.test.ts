@@ -207,6 +207,98 @@ describe("claude-rules extension", () => {
     expect(JSON.stringify(mock.sentMessages[0])).toContain("Use strict types.");
   });
 
+  test("disables read activation without weakening mutation activation", async () => {
+    const project = await makeTempDir();
+    await writeRule(project, ".claude/rules/base.md", "Always follow this rule.");
+    await writeRule(
+      project,
+      ".claude/rules/typed.md",
+      "---\npaths: src/**\n---\nUse strict types.",
+    );
+    process.env.CLAUDE_PROJECT_DIR = project;
+    setBundleConfigForTests({
+      extensions: {
+        "claude-rules": {
+          enabled: true,
+          config: { global: false, project: true, onFileRead: false },
+        },
+      },
+    });
+    const mock = createMockExtensionAPI();
+    claudeRulesExtension(mock.pi);
+    const ctx = { cwd: project, hasUI: false, sessionManager: { getSessionId: () => "one" } };
+    await mock.handlers.get("session_start")?.[0]?.({ reason: "startup" }, ctx);
+    const startup = await mock.handlers.get("before_agent_start")?.[0]?.(
+      { systemPrompt: "BASE" },
+      ctx,
+    );
+
+    await mock.handlers.get("tool_call")?.[0]?.(
+      { toolName: "read", input: { path: "src/app.ts" } },
+      ctx,
+    );
+    await mock.handlers.get("turn_end")?.[0]?.({}, ctx);
+    const mutation = await mock.handlers.get("tool_call")?.[0]?.(
+      { toolName: "edit", input: { path: "src/app.ts" } },
+      ctx,
+    );
+
+    expect(startup.message.content).toContain("Always follow this rule.");
+    expect(mock.sentMessages).toHaveLength(0);
+    expect(mutation).toMatchObject({ block: true });
+  });
+
+  test("retains scoped rules after a terminal batch and flushes them on a later turn", async () => {
+    const project = await makeTempDir();
+    await writeRule(
+      project,
+      ".claude/rules/typed.md",
+      "---\npaths: src/**\n---\nUse strict types.",
+    );
+    process.env.CLAUDE_PROJECT_DIR = project;
+    const mock = createMockExtensionAPI();
+    claudeRulesExtension(mock.pi);
+    const ctx = { cwd: project, hasUI: false, sessionManager: { getSessionId: () => "one" } };
+    await mock.handlers.get("session_start")?.[0]?.({ reason: "startup" }, ctx);
+    await mock.handlers.get("tool_call")?.[0]?.(
+      { toolName: "read", input: { path: "src/app.ts" } },
+      ctx,
+    );
+    await mock.handlers.get("tool_execution_end")?.[0]?.({ result: { terminate: true } }, ctx);
+
+    await mock.handlers.get("turn_end")?.[0]?.({}, ctx);
+    expect(mock.sentMessages).toHaveLength(0);
+
+    await mock.handlers.get("turn_start")?.[0]?.({}, ctx);
+    await mock.handlers.get("turn_end")?.[0]?.({}, ctx);
+    expect(mock.sentMessages).toHaveLength(1);
+    expect(JSON.stringify(mock.sentMessages[0])).toContain("Use strict types.");
+  });
+
+  test("flushes scoped rules after a mixed non-terminal tool batch", async () => {
+    const project = await makeTempDir();
+    await writeRule(
+      project,
+      ".claude/rules/typed.md",
+      "---\npaths: src/**\n---\nUse strict types.",
+    );
+    process.env.CLAUDE_PROJECT_DIR = project;
+    const mock = createMockExtensionAPI();
+    claudeRulesExtension(mock.pi);
+    const ctx = { cwd: project, hasUI: false, sessionManager: { getSessionId: () => "one" } };
+    await mock.handlers.get("session_start")?.[0]?.({ reason: "startup" }, ctx);
+    await mock.handlers.get("tool_call")?.[0]?.(
+      { toolName: "read", input: { path: "src/app.ts" } },
+      ctx,
+    );
+    const toolEnd = mock.handlers.get("tool_execution_end")?.[0];
+    await toolEnd?.({ result: { terminate: true } }, ctx);
+    await toolEnd?.({ result: {} }, ctx);
+
+    await mock.handlers.get("turn_end")?.[0]?.({}, ctx);
+    expect(mock.sentMessages).toHaveLength(1);
+  });
+
   for (const toolName of ["edit", "write"] as const) {
     test(`blocks the first matching ${toolName} and allows retry after rule injection`, async () => {
       const project = await makeTempDir();

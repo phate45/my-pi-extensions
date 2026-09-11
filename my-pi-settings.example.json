@@ -53,7 +53,8 @@
       "enabled": true,
       "config": {
         "global": true,
-        "project": true
+        "project": true,
+        "onFileRead": true
       }
     },
     "context": {

@@ -41,6 +41,12 @@ describe("claude resource load config", () => {
     expect(normalizeClaudeRulesConfig({ global: false })).toEqual({
       global: false,
       project: true,
+      onFileRead: true,
+    });
+    expect(normalizeClaudeRulesConfig({ onFileRead: false })).toEqual({
+      global: true,
+      project: true,
+      onFileRead: false,
     });
   });
 

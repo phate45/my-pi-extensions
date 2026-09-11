@@ -291,6 +291,30 @@ describe("skill-tool extension", () => {
     expect(toolResult.content[0]?.text).toContain("Deploy it.");
   });
 
+  test("retains skill discovery after a terminal batch and flushes it on a later turn", async () => {
+    const root = await makeTempDir();
+    await writePackageSkill(root);
+    setBundleConfigForTests({
+      extensions: { "cc-resource-paths": { enabled: true, config: { skills: { project: true } } } },
+    });
+    const { pi, handlers, sentMessages } = createMockExtensionAPI();
+    skillToolExtension(pi);
+    await handlers.get("session_start")?.[0]?.({}, { cwd: root });
+    await handlers.get("tool_call")?.[0]?.(
+      { toolName: "read", input: { path: "packages/api/src/service.ts" } },
+      { cwd: root },
+    );
+    await handlers.get("tool_execution_end")?.[0]?.({ result: { terminate: true } }, {});
+
+    await handlers.get("turn_end")?.[0]?.({}, {});
+    expect(sentMessages).toHaveLength(0);
+
+    await handlers.get("turn_start")?.[0]?.({}, {});
+    await handlers.get("turn_end")?.[0]?.({}, {});
+    expect(sentMessages).toHaveLength(1);
+    expect(JSON.stringify(sentMessages[0])).toContain("packages/api:deploy");
+  });
+
   test("activates ancestor package skills without leaking sibling package skills", async () => {
     const root = await makeTempDir();
     await writePackageSkill(root, "packages", "shared");

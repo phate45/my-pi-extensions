@@ -13,6 +13,7 @@ import { formatExpandedInvocation, formatSkillLikeInvocation } from "./lib/invoc
 import { executeSkillByName } from "./lib/skill-invocation.js";
 import { areSkillsDisabled, isExtensionEnabled } from "../infra/lib/bundle-config.js";
 import { defineManagedExtension } from "../infra/lib/managed-extension.js";
+import { createTerminalToolTurnTracker } from "../infra/lib/terminal-tool-turn.js";
 import { getCcResourcePathsConfig } from "./lib/claude-resource-load-config.js";
 
 const skillToolSchema = Type.Object({
@@ -109,6 +110,7 @@ export default defineManagedExtension({
     let skillToolRegistered = false;
     let initialSkills: SkillSummary[] | undefined;
     const pendingSkills = new Map<string, SkillSummary>();
+    const terminalToolTurn = createTerminalToolTurnTracker(pi);
 
     pi.registerMessageRenderer<SkillDiscoveryMessageDetails>(
       SKILL_DISCOVERY_MESSAGE_TYPE,
@@ -190,6 +192,7 @@ export default defineManagedExtension({
     });
 
     pi.on("before_agent_start", async (event) => {
+      terminalToolTurn.reset();
       initialSkills ??= [
         ...new Map(
           [...getSkillCommands(pi), ...getActivatedClaudeSkills(pi)].map((skill) => [
@@ -220,11 +223,10 @@ export default defineManagedExtension({
     });
 
     pi.on("turn_end", () => {
-      if (pendingSkills.size === 0) return;
+      if (pendingSkills.size === 0 || terminalToolTurn.concluded()) return;
       const skills = [...pendingSkills.values()].sort((left, right) =>
         left.name.localeCompare(right.name),
       );
-      pendingSkills.clear();
       pi.sendMessage(
         {
           customType: SKILL_DISCOVERY_MESSAGE_TYPE,
@@ -246,6 +248,7 @@ export default defineManagedExtension({
         },
         { deliverAs: "steer" },
       );
+      pendingSkills.clear();
     });
   },
 });

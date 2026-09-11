@@ -1,6 +1,6 @@
 ---
 created: 2026-07-30T22:32:26
-modified: 2026-08-09T21:14:24
+modified: 2026-09-11T17:48:11
 ---
 
 # Claude Rules Stack
@@ -55,8 +55,9 @@ The parser accepts standard YAML frontmatter. Invalid frontmatter skips only the
 
 Unconditional project rules enter context before the first model call. When Pi starts inside a package subtree, unconditional nested rules along that directory's ancestry enter context at the same boundary. Path-scoped rules activate when the agent targets a matching project file with `read`, `edit`, or `write`.
 
-- `read` executes normally; Pi injects matching root and nested rules before the next model call.
+- `read` executes normally; Pi injects matching root and nested rules before the next model call unless `onFileRead` is disabled.
 - `edit` and `write` block before mutation; Pi injects matching root and nested rules and asks the agent to retry.
+- a terminal tool batch suppresses the end-of-turn steer so pending rules cannot restart a concluded agent; the rules remain pending for a later turn
 - each rule injects once per compaction epoch
 - parallel matches combine into one rule message
 - compaction resets activation, immediately restores unconditional rules, and permits scoped rules to activate again
@@ -86,14 +87,15 @@ Control project and global discovery independently:
       "enabled": true,
       "config": {
         "global": false,
-        "project": true
+        "project": true,
+        "onFileRead": false
       }
     }
   }
 }
 ```
 
-Both source switches default to `true`.
+All three options default to `true`. `onFileRead` controls path-scoped activation from `read`; edit and write activation remains enabled so mutations still receive applicable rules.
 
 ## Verification
 
@@ -101,7 +103,9 @@ When changing this stack, verify:
 
 - unconditional rules load before the first model call
 - matching reads continue and inject before the next model call
+- `onFileRead: false` disables read activation without weakening edit and write activation
 - matching edits and writes block once, then succeed on retry
+- terminal tool batches do not flush pending rules as steering messages, while mixed non-terminal batches still flush them
 - unrelated and out-of-project paths do not activate rules
 - project rules override global rules by relative path
 - nested rules load only for targets in their subtree and match package-relative paths
