@@ -18,13 +18,13 @@ import {
   type AssistantMessage,
   type AssistantMessageEvent,
   type AssistantMessageEventStream,
-  type Context,
   createAssistantMessageEventStream,
   type FetchFunction,
   type Model,
   type ProviderHeaders,
   type SimpleStreamOptions,
   type StreamFunction,
+  type TranscriptContext,
 } from "@earendil-works/pi-ai";
 import { type KeyOutcome, type KeyPool, type Lease, PoolUnavailableError } from "./key-pool.js";
 
@@ -239,7 +239,7 @@ export function createRotatingStreamSimple(config: RotatingStreamConfig) {
 
   return function rotatingStreamSimple(
     model: Model<Api>,
-    context: Context,
+    context: TranscriptContext,
     options?: SimpleStreamOptions,
   ): AssistantMessageEventStream {
     const out = createAssistantMessageEventStream();

@@ -10,7 +10,7 @@
  */
 
 import { describe, expect, test } from "bun:test";
-import type { Api, Context, Model } from "@earendil-works/pi-ai";
+import { type Api, type Context, type Model, normalizeContext } from "@earendil-works/pi-ai";
 import { getApiProvider } from "@earendil-works/pi-ai/compat";
 import { KeyPool } from "../../extensions/my-stuff/lib/key-pool.js";
 import { createRotatingStreamSimple } from "../../extensions/my-stuff/lib/rotating-stream.js";
@@ -27,7 +27,9 @@ const model = {
   cost: { input: 0, output: 0, cacheRead: 0, cacheWrite: 0 },
 } as unknown as Model<Api>;
 
-const context = { messages: [{ role: "user", content: "hi" }] } as unknown as Context;
+const context = normalizeContext({
+  messages: [{ role: "user", content: "hi" }],
+} as unknown as Context);
 
 const keys = [
   { key: "sk-key-one-aaaaaaaaaaaa", label: "one" },

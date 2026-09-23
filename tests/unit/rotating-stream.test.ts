@@ -4,6 +4,7 @@ import {
   type AssistantMessage,
   type AssistantMessageEvent,
   type Context,
+  normalizeContext,
   createAssistantMessageEventStream,
   type FetchFunction,
   type Model,
@@ -25,7 +26,7 @@ const model = {
   name: "GLM 5.3 Flash",
 } as unknown as Model<Api>;
 
-const context = { messages: [] } as unknown as Context;
+const context = normalizeContext({ messages: [] } as Context);
 
 const keys = [
   { key: "sk-key-one-aaaaaaaaaaaa", label: "one" },
