@@ -28,6 +28,22 @@ const DEEPSEEK_THINKING = {
   chatTemplateKwargs: { thinking: { $var: "thinking.enabled" } },
 };
 
+// With no thinkingFormat, pi sends `reasoning_effort` (the session's thinking level)
+// only when the model claims support for it; without this the level never leaves pi.
+const REASONING_EFFORT = { supportsReasoningEffort: true };
+
+// TensorX honours only "none", "low" and "high" for GLM 5.3; every other value, and an
+// omitted one, runs at maximum depth (docs.tensorx.ai/api-reference/reasoning).
+const GLM_53_LEVELS = {
+  off: "none",
+  minimal: "low",
+  low: "low",
+  medium: "high",
+  high: "high",
+  xhigh: "max",
+  max: "max",
+};
+
 type CatalogEntry = {
   id: string;
   name: string;
@@ -35,6 +51,7 @@ type CatalogEntry = {
   contextWindow: number;
   cost: { input: number; output: number; cacheRead: number; cacheWrite: number };
   thinking?: Record<string, unknown>;
+  thinkingLevelMap?: Record<string, string | null>;
 };
 
 // contextWindow is set per model rather than shared. The Qwen entries match the 256K
@@ -83,6 +100,8 @@ const MODELS: CatalogEntry[] = [
     input: ["text", "image"],
     contextWindow: 999_999,
     cost: { input: 0.2, output: 0.5, cacheRead: 0.05, cacheWrite: 0.2 },
+    thinking: REASONING_EFFORT,
+    thinkingLevelMap: GLM_53_LEVELS,
   },
   {
     id: "z-ai/glm-5.3",
@@ -109,6 +128,7 @@ export function tensorxModels(): ProviderModelConfig[] {
     cost: entry.cost,
     contextWindow: entry.contextWindow,
     maxTokens: MAX_TOKENS,
+    ...(entry.thinkingLevelMap ? { thinkingLevelMap: entry.thinkingLevelMap } : {}),
     compat: {
       supportsDeveloperRole: false,
       supportsReasoningEffort: false,

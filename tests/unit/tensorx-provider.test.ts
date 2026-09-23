@@ -91,6 +91,7 @@ describe("tensorx provider registration", () => {
       const models = providers.get("tensorx")?.models as {
         id: string;
         compat: Record<string, unknown>;
+        thinkingLevelMap?: Record<string, string | null>;
       }[];
       const deepseek = models.find((entry) => entry.id === "deepseek/deepseek-v4-pro");
       const glm = models.find((entry) => entry.id === "z-ai/glm-5.3-flash");
@@ -101,6 +102,10 @@ describe("tensorx provider registration", () => {
       });
       expect(deepseek?.compat.maxTokensField).toBe("max_tokens");
       expect(glm?.compat.thinkingFormat).toBeUndefined();
+      expect(glm?.compat.supportsReasoningEffort).toBe(true);
+      expect(deepseek?.compat.supportsReasoningEffort).toBe(false);
+      expect(glm?.thinkingLevelMap).toMatchObject({ off: "none", low: "low", medium: "high" });
+      expect(deepseek?.thinkingLevelMap).toBeUndefined();
       expect(models).toHaveLength(8);
     });
   });
