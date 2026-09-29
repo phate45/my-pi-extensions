@@ -67,3 +67,8 @@ After changing anything important, verify the right slice instead of relying on 
 - confirm managed extensions still gate behavior correctly
 - confirm startup summaries and `/context` stay aligned when context behavior changes
 - confirm skill execution and raw `read SKILL.md` behavior stay distinct when touching the skill stack
+
+## Definition of done
+
+The work is done when it is committed and pushed (provided the verification steps from above are passing).
+
