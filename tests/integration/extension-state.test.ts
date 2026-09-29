@@ -32,7 +32,7 @@ describe("extension state integration", () => {
     ).toBe(true);
     expect(loadedPaths.some((entry) => entry.includes("extensions/cc-like/index.ts"))).toBe(true);
     expect(state.loadedExtensions).toContainEqual(
-      expect.objectContaining({ path: "<inline:llama.cpp>", hidden: true }),
+      expect.objectContaining({ path: "builtin:llama.cpp", hidden: true }),
     );
     expect(loadedPaths.some((entry) => entry.includes("extensions/cc-like/custom-header.ts"))).toBe(
       false,
@@ -43,6 +43,10 @@ describe("extension state integration", () => {
     expect(
       loadedPaths.some((entry) => entry.includes("extensions/my-stuff/frontmatter-timestamps.ts")),
     ).toBe(true);
+
+    expect(state.tools).toContain("subagents_enable");
+    expect(state.tools).toContain("bg_wait");
+    expect(state.tools).not.toContain("subagent_wait");
 
     expect(state.effective.extensions["git-context"]).toBe(true);
     expect(state.effective.extensions["claude-rules"]).toBe(true);
