@@ -19,12 +19,11 @@ origin_ref=$(git symbolic-ref refs/remotes/origin/HEAD)
 [[ $origin_ref == refs/remotes/origin/* ]] || refuse 'missing cached origin default branch'
 origin_manifest=$(git show "$origin_ref:package.json")
 
-# Reject ranges and malformed versions rather than printing an ambiguous answer.
-# Numeric prerelease identifiers must not have leading zeroes.
+# Require one manifest and a bare version pin, not a dependency range.
 version_filter='
   select(length == 1) | .[0].devDependencies["@earendil-works/pi-coding-agent"]
   | select(type == "string")
-  | select(test("^(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)(-((0|[1-9][0-9]*|[0-9]*[A-Za-z-][0-9A-Za-z-]*)(\\.(0|[1-9][0-9]*|[0-9]*[A-Za-z-][0-9A-Za-z-]*))*))?(\\+[0-9A-Za-z-]+(\\.[0-9A-Za-z-]+)*)?$") and (contains("\n") | not))
+  | select(test("^[0-9]+\\.[0-9]+\\.[0-9]+(-[0-9A-Za-z.-]+)?(\\+[0-9A-Za-z.-]+)?$") and (contains("\n") | not))
 '
 local_pin=$(jq -esr "$version_filter" package.json)
 origin_pin=$(printf '%s' "$origin_manifest" | jq -esr "$version_filter")
