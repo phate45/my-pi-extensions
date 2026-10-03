@@ -287,13 +287,13 @@ export function replaceProjectContextBlock(
   const taggedContextPattern =
     /\n\n<project_context>\n+Project-specific instructions and guidelines:\n\n[\s\S]*?<\/project_context>\n?/u;
   if (taggedContextPattern.test(systemPrompt)) {
-    return systemPrompt.replace(taggedContextPattern, replacementBlock);
+    return systemPrompt.replace(taggedContextPattern, () => replacementBlock);
   }
 
   const stockBlock = renderLegacyProjectContextBlock(stockFiles);
 
   if (stockBlock && systemPrompt.includes(stockBlock)) {
-    return systemPrompt.replace(stockBlock, replacementBlock);
+    return systemPrompt.replace(stockBlock, () => replacementBlock);
   }
 
   return insertContextBlock(systemPrompt, replacementBlock);

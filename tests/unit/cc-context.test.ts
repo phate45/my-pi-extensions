@@ -6,6 +6,8 @@ import { execFileSync } from "node:child_process";
 import {
   discoverConfiguredClaudeContextFiles,
   discoverEffectiveContextFiles,
+  renderProjectContextBlock,
+  replaceProjectContextBlock,
 } from "../../extensions/cc-like/lib/cc-context.js";
 import { resetProjectRootCacheForTests } from "../../extensions/cc-like/lib/git-project-root.js";
 import {
@@ -30,6 +32,31 @@ afterEach(async () => {
     if (!dir) continue;
     await rm(dir, { recursive: true, force: true });
   }
+});
+
+describe("project context replacement", () => {
+  test.each([
+    "tagged",
+    "legacy",
+  ])("preserves literal replacement tokens in %s context", (format) => {
+    const stockFiles = [{ path: "/project/CLAUDE.md", content: "stock instructions" }];
+    const replacementFiles = [
+      {
+        path: "/project/$&-CLAUDE.md",
+        content: "Literal tokens: $$ $& $` $' $1 $<name>",
+      },
+    ];
+    const stockBlock =
+      format === "tagged"
+        ? renderProjectContextBlock(stockFiles)
+        : "\n\n# Project Context\n\nProject-specific instructions and guidelines:\n\n## /project/CLAUDE.md\n\nstock instructions\n\n";
+    const prefix = "Leading system instructions";
+    const suffix = "\nTrailing skills and instructions";
+
+    expect(
+      replaceProjectContextBlock(prefix + stockBlock + suffix, stockFiles, replacementFiles),
+    ).toBe(prefix + renderProjectContextBlock(replacementFiles) + suffix);
+  });
 });
 
 describe("cc context discovery", () => {
