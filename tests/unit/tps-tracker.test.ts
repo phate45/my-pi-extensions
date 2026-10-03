@@ -23,7 +23,7 @@ describe("tps-tracker extension", () => {
     expect(handlers.get("agent_end")?.length).toBe(1);
   });
 
-  test("includes a completion timestamp in the agent_end notification", async () => {
+  test("keeps the full completion summary in status without notifying", async () => {
     const { pi, handlers } = createMockExtensionAPI();
     tpsTrackerExtension(pi);
 
@@ -54,15 +54,15 @@ describe("tps-tracker extension", () => {
       Date.now = originalDateNow;
     }
 
-    expect(notifyCalls).toEqual([
+    expect(notifyCalls).toEqual([]);
+    expect(statusCalls).toEqual([
       {
+        key: "tps",
         message: `✓ N/A  0 tokens in 0.0s streaming  [${new Date(Date.UTC(2026, 5, 21, 12, 34, 56))
           .toLocaleString("sv-SE", { hour12: false })
           .replace(",", "")}]`,
-        level: "info",
       },
     ]);
-    expect(statusCalls).toEqual([{ key: "tps", message: "done — N/A" }]);
   });
 
   test("skips registration when disabled in bundle config", () => {

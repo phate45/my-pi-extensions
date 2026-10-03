@@ -110,8 +110,7 @@ export default defineManagedExtension({
 
       const completedAt = theme.fg("dim", `[${formatCompletionTimestamp(Date.now())}]`);
 
-      ctx.ui.notify(`${theme.fg("success", "✓")} ${tpsLabel}  ${detail}  ${completedAt}`, "info");
-      ctx.ui.setStatus("tps", theme.fg("dim", `done — ${tps > 0 ? `${tps} tok/s` : "N/A"}`));
+      ctx.ui.setStatus("tps", `${theme.fg("success", "✓")} ${tpsLabel}  ${detail}  ${completedAt}`);
     });
   },
 });

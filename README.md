@@ -20,6 +20,7 @@ It exists so Pi customization lives in one repo instead of leaking across `~/.pi
 - bundles `pi-subagents` as Claude-compatible behavior, including its packaged skills and prompts
 - bundles Patty's background task tools while suppressing its redundant `agent_bg` tool
 - includes a generated example bundle config and test coverage for extension behavior
+- shows live TPS and the timestamped completion summary through `ctx.ui.setStatus("tps", ...)`, without completion notifications
 
 ## Layout
 
