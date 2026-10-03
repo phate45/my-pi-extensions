@@ -77,6 +77,13 @@ isolated directory, so it never prompts for project approval.
 After `just compat` passes, run `just compat-update` to repeat the same check and copy the tested
 `package.json` and `bun.lock` into the working checkout. Failed checks leave both files untouched.
 
+`just fleet-ready pi` reports the tested `@earendil-works/pi-coding-agent` development pin for fleet
+rollouts. This read-only, offline probe uses Bash, Git, and jq. It prints one bare version and exits 0
+only when `package.json` has no staged or unstaged changes and its pin matches the last-fetched
+origin default branch at `refs/remotes/origin/HEAD`. It never fetches. Missing cached refs, invalid
+pins, different local pins, and unsupported tools exit 2 without stdout. Unrelated local changes
+and commits do not block an answer.
+
 ## Docs
 
 - `docs/architecture.md`

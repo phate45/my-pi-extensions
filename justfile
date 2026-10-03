@@ -55,6 +55,11 @@ compat:
 compat-update:
     bun run scripts/compat.ts --apply
 
+# Report the tested Pi pin only when it matches cached origin and package.json is clean.
+[positional-arguments]
+@fleet-ready tool:
+    bash scripts/fleet-ready.sh "$1"
+
 # Run all project tests.
 # --timeout guards the first pi spawn in a fresh checkout/compat sandbox:
 # transforming the uncached bundle extensions can exceed the 5s default.
