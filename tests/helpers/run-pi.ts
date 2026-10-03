@@ -14,6 +14,7 @@ export type CapturedExtensionState = {
   configSources: string[];
   commands: string[];
   tools: string[];
+  toolDescriptions: Record<string, string>;
   effective: {
     featureFlags: Record<string, boolean>;
     extensions: Record<string, boolean>;

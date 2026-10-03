@@ -27,6 +27,10 @@ export function createMockExtensionAPI(): MockExtensionAPI {
       const list = handlers.get(event) ?? [];
       list.push(handler);
       handlers.set(event, list);
+      return () => {
+        const index = list.indexOf(handler);
+        if (index !== -1) list.splice(index, 1);
+      };
     },
     registerTool(tool) {
       tools.push(tool);

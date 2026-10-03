@@ -98,6 +98,55 @@ describe("extension state integration", () => {
     ]);
   });
 
+  test.each([
+    { global: false, local: true, trusted: true, expected: true },
+    { global: true, local: false, trusted: true, expected: false },
+    { global: false, local: true, trusted: false, expected: false },
+    { global: true, local: false, trusted: false, expected: true },
+  ])("trust-aware tools honor $global/$local with trust=$trusted", async (settings) => {
+    const env = await setupEnv();
+    const config = (enabled: boolean) => ({
+      extensions: { subagents: { enabled }, "multi-edit": { enabled } },
+    });
+    await writeJson(path.join(env.agentDir, "my-pi-settings.json"), config(settings.global));
+    await writeJson(
+      path.join(env.projectDir, ".pi", "my-pi-settings.json"),
+      config(settings.local),
+    );
+
+    const state = await runPiAndCaptureState({ env, approve: settings.trusted });
+
+    expect(state.tools.includes("subagents_enable")).toBe(settings.expected);
+    expect(state.toolDescriptions.edit?.includes("multi")).toBe(settings.expected);
+    expect(state.configSources).toEqual([
+      path.join(env.agentDir, "my-pi-settings.json"),
+      ...(settings.trusted ? [path.join(env.projectDir, ".pi", "my-pi-settings.json")] : []),
+    ]);
+    expect(state.errors).toEqual([]);
+  });
+
+  test.each([false, true])("trust-aware tools honor explicit replacement=%s", async (enabled) => {
+    const env = await setupEnv();
+    const config = (value: boolean) => ({
+      extensions: { subagents: { enabled: value }, "multi-edit": { enabled: value } },
+    });
+    await writeJson(path.join(env.agentDir, "my-pi-settings.json"), config(!enabled));
+    await writeJson(path.join(env.projectDir, ".pi", "my-pi-settings.json"), config(!enabled));
+    const overridePath = path.join(env.rootDir, "override.json");
+    await writeJson(overridePath, config(enabled));
+
+    const state = await runPiAndCaptureState({
+      env,
+      approve: true,
+      overrideSettingsPath: overridePath,
+    });
+
+    expect(state.tools.includes("subagents_enable")).toBe(enabled);
+    expect(state.toolDescriptions.edit?.includes("multi")).toBe(enabled);
+    expect(state.configSources).toEqual([overridePath]);
+    expect(state.errors).toEqual([]);
+  });
+
   test("cli override replaces global and local autodiscovery", async () => {
     const env = await setupEnv();
     const overridePath = path.join(env.rootDir, "override.json");
@@ -162,6 +211,7 @@ describe("extension state integration", () => {
     ).toBe(true);
     expect(state.effective.featureFlags.ccLike).toBe(false);
     expect(state.commands).not.toContain("context");
+    expect(state.tools).not.toContain("subagents_enable");
   });
 
   test("myStuff feature flag disables my-stuff tools while keeping extensions loaded", async () => {
@@ -181,6 +231,7 @@ describe("extension state integration", () => {
     ).toBe(true);
     expect(state.effective.featureFlags.myStuff).toBe(false);
     expect(state.tools).not.toContain("web_research");
+    expect(state.toolDescriptions.edit?.includes("multi")).toBe(false);
   });
 
   test("headless feature flag disables user-facing fluff while keeping extensions loaded", async () => {

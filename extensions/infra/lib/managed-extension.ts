@@ -1,4 +1,8 @@
-import type { ExtensionAPI } from "@earendil-works/pi-coding-agent";
+import type {
+  ExtensionAPI,
+  ExtensionHandler,
+  SessionStartEvent,
+} from "@earendil-works/pi-coding-agent";
 import { isManagedExtensionEnabled } from "./bundle-config.js";
 import { getExtensionConfig, type ExtensionConfigDefinition } from "./extension-config.js";
 
@@ -19,12 +23,14 @@ export type ManagedExtensionFactory = ((pi: ExtensionAPI) => unknown) & {
 export type ManagedExtensionOptions = {
   name: string;
   featureFlag?: string;
+  setupOnSessionStart?: boolean;
   setup: (pi: ExtensionAPI) => unknown;
 };
 
 export type ManagedConfiguredExtensionOptions<TRaw extends Record<string, unknown>, TConfig> = {
   name: string;
   featureFlag?: string;
+  setupOnSessionStart?: boolean;
   config: ExtensionConfigDefinition<TRaw, TConfig>;
   setup: (pi: ExtensionAPI, getConfig: () => TConfig) => unknown;
 };
@@ -54,15 +60,55 @@ export function defineManagedExtension<TRaw extends Record<string, unknown>, TCo
       : {}),
   };
 
-  const managedExtension: ManagedExtensionFactory = function managedExtension(pi: ExtensionAPI) {
+  const setup = (pi: ExtensionAPI) => {
     if (!isManagedExtensionEnabled(options.name, options.featureFlag)) return;
+    if (!hasConfig(options)) return options.setup(pi);
+    return options.setup(pi, () => getExtensionConfig(options.name, options.config));
+  };
 
-    if (!hasConfig(options)) {
-      return options.setup(pi);
-    }
+  const managedExtension: ManagedExtensionFactory = function managedExtension(pi: ExtensionAPI) {
+    if (!options.setupOnSessionStart) return setup(pi);
 
-    const getConfig = () => getExtensionConfig(options.name, options.config);
-    return options.setup(pi, getConfig);
+    let started = false;
+    pi.on("session_start", async (event, ctx) => {
+      if (started) return;
+      started = true;
+      const startupHandlers: { handler: ExtensionHandler<SessionStartEvent>; active: boolean }[] =
+        [];
+      let collecting = true;
+      const adaptedPi: ExtensionAPI = {
+        ...pi,
+        on: new Proxy(pi.on, {
+          apply(target, _thisArg, args) {
+            const unsubscribe = Reflect.apply(target, pi, args) as () => void;
+            if (args[0] !== "session_start" || !collecting) return unsubscribe;
+            const entry = { handler: args[1] as ExtensionHandler<SessionStartEvent>, active: true };
+            startupHandlers.push(entry);
+            return () => {
+              entry.active = false;
+              unsubscribe();
+            };
+          },
+        }),
+      };
+      try {
+        await setup(adaptedPi);
+      } finally {
+        collecting = false;
+      }
+      // Pi snapshots handlers before dispatch, so registrations made during setup
+      // need the current startup event once. Future events use normal dispatch.
+      const errors: unknown[] = [];
+      for (const { handler } of startupHandlers.filter((entry) => entry.active)) {
+        try {
+          await handler(event, ctx);
+        } catch (error) {
+          errors.push(error);
+        }
+      }
+      if (errors.length)
+        throw new AggregateError(errors, `${options.name} startup handlers failed`);
+    });
   };
 
   managedExtension[managedExtensionDescriptorSymbol] = descriptor;

@@ -24,7 +24,7 @@ import {
   writeFile as fsWriteFile,
 } from "fs/promises";
 import { isAbsolute, resolve as resolvePath } from "path";
-import { isManagedExtensionEnabled } from "../infra/lib/bundle-config.js";
+import { defineManagedExtension } from "../infra/lib/managed-extension.js";
 
 const editItemSchema = Type.Object({
   path: Type.Optional(
@@ -758,9 +758,14 @@ async function applyClassicEdits(
   return results;
 }
 
-export default function (pi: ExtensionAPI) {
-  if (!isManagedExtensionEnabled("multi-edit", "myStuff")) return;
+export default defineManagedExtension({
+  name: "multi-edit",
+  featureFlag: "myStuff",
+  setupOnSessionStart: true,
+  setup: registerMultiEdit,
+});
 
+function registerMultiEdit(pi: ExtensionAPI) {
   pi.registerTool({
     name: "edit",
     label: "edit",

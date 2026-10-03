@@ -67,6 +67,83 @@ describe("managed extension config getter", () => {
     ]);
   });
 
+  test("startup setup waits for final enablement and replays async startup handlers once", async () => {
+    setBundleConfigForTests({ extensions: { demo: { enabled: false } } });
+    const seen: string[] = [];
+    const extension = defineManagedExtension({
+      name: "demo",
+      setupOnSessionStart: true,
+      async setup(pi) {
+        seen.push("setup");
+        await Promise.resolve();
+        const stop = pi.on("session_start", () => {
+          seen.push("removed");
+        });
+        stop();
+        pi.on("session_start", (event) => {
+          seen.push(event.reason);
+        });
+        pi.on("resources_discover", () => ({ skillPaths: ["/skills"] }));
+      },
+    });
+    const { pi, handlers } = createMockExtensionAPI();
+    await extension(pi);
+    expect(seen).toEqual([]);
+    setBundleConfigForTests({ extensions: { demo: { enabled: true } } });
+    const dispatch = async (reason: string) => {
+      for (const handler of [...(handlers.get("session_start") ?? [])]) {
+        await handler({ type: "session_start", reason }, {});
+      }
+    };
+    await dispatch("startup");
+    expect(seen).toEqual(["setup", "startup"]);
+    expect(await handlers.get("resources_discover")?.[0]?.({}, {})).toEqual({
+      skillPaths: ["/skills"],
+    });
+    await dispatch("resume");
+    expect(seen).toEqual(["setup", "startup", "resume"]);
+  });
+
+  test("replays remaining startup handlers after a handler fails", async () => {
+    setBundleConfigForTests({});
+    const seen: string[] = [];
+    const extension = defineManagedExtension({
+      name: "demo",
+      setupOnSessionStart: true,
+      setup(pi) {
+        pi.on("session_start", () => {
+          throw new Error("startup failed");
+        });
+        pi.on("session_start", () => {
+          seen.push("continued");
+        });
+      },
+    });
+    const { pi, handlers } = createMockExtensionAPI();
+    await extension(pi);
+    await expect(handlers.get("session_start")?.[0]?.({}, {})).rejects.toThrow(
+      "demo startup handlers failed",
+    );
+    expect(seen).toEqual(["continued"]);
+  });
+
+  test("startup setup suppresses a factory-time enabled extension", async () => {
+    setBundleConfigForTests({ extensions: { demo: { enabled: true } } });
+    let registered = false;
+    const extension = defineManagedExtension({
+      name: "demo",
+      setupOnSessionStart: true,
+      setup() {
+        registered = true;
+      },
+    });
+    const { pi, handlers } = createMockExtensionAPI();
+    await extension(pi);
+    setBundleConfigForTests({ extensions: { demo: { enabled: false } } });
+    await handlers.get("session_start")?.[0]?.({}, {});
+    expect(registered).toBe(false);
+  });
+
   test("passes a live config getter into setup", async () => {
     const seen: string[] = [];
     const demoConfig = defineExtensionConfig({

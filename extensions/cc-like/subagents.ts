@@ -34,6 +34,7 @@ export function registerBundledSubagents(
 export default defineManagedExtension({
   name: "subagents",
   featureFlag: "ccLike",
+  setupOnSessionStart: true,
   async setup(pi) {
     const packageRoot = path.dirname(fileURLToPath(import.meta.resolve(SUBAGENTS_PACKAGE)));
     const { default: registerSubagents } = (await import(SUBAGENTS_PACKAGE)) as {

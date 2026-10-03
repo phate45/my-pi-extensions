@@ -35,6 +35,9 @@ export default function captureExtensionState(pi: ExtensionAPI) {
       configSources: getBundleConfigSources(),
       commands: pi.getCommands().map((command) => command.name),
       tools: pi.getAllTools().map((tool) => tool.name),
+      toolDescriptions: Object.fromEntries(
+        pi.getAllTools().map((tool) => [tool.name, tool.description]),
+      ),
       effective: {
         featureFlags: Object.fromEntries(
           CHECKS.featureFlags.map((name) => [name, isFeatureFlagEnabled(name)]),

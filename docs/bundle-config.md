@@ -32,7 +32,11 @@ No global or project-local merge happens in override mode.
 ## Timing
 
 Global or override config is preloaded early so extension factory-time gating works.
-Trusted project-local config merges later, once trust-aware startup logic can decide whether to honor it.
+Trusted project-local config merges in the bootstrap's `session_start` handler, before the managed startup handlers run.
+
+Subagents and multi-edit defer setup and enablement checks until `session_start` with `setupOnSessionStart: true`. They honor trusted project opt-in and opt-out before registering tools. The wrapper awaits setup and invokes any startup handlers registered during setup once for the current event, because Pi snapshots handlers before dispatch. Resource discovery then runs normally.
+
+Other managed extensions still gate at factory time. In particular, providers must register before initial model selection. Project enablement changes for those extensions do not retroactively register or remove capabilities.
 
 That split is deliberate. It keeps early gating possible without treating untrusted project files as startup policy.
 

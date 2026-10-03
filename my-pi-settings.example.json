@@ -80,6 +80,9 @@
     "interactive-at-read": {
       "enabled": true
     },
+    "multi-edit": {
+      "enabled": true
+    },
     "skill-prompts": {
       "enabled": true
     },
