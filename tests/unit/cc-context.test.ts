@@ -1,4 +1,4 @@
-import { afterEach, describe, expect, test } from "bun:test";
+import { afterEach, describe, expect, spyOn, test } from "bun:test";
 import { mkdtemp, mkdir, rm, writeFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
@@ -46,15 +46,25 @@ describe("cc context discovery", () => {
     const project = path.join(root, "project");
     await mkdir(agentDir, { recursive: true });
     await mkdir(project, { recursive: true });
-    await writeFile(path.join(agentDir, "CLAUDE.md"), "global");
+    await writeFile(path.join(agentDir, "CLAUDE.md"), "wrong global");
+    const claudeDir = path.join(root, ".claude");
+    await mkdir(claudeDir);
+    await writeFile(path.join(claudeDir, "CLAUDE.md"), "global");
     await writeFile(path.join(project, "CLAUDE.md"), "project");
     await writeFile(path.join(project, "CLAUDE.local.md"), "local");
+    const home = spyOn(os, "homedir").mockReturnValue(root);
 
-    const files = discoverConfiguredClaudeContextFiles(
-      project,
-      { global: true, project: false, local: true },
-      agentDir,
-    );
+    let files;
+    try {
+      files = discoverConfiguredClaudeContextFiles(project, {
+        global: true,
+        project: false,
+        local: true,
+      });
+    } finally {
+      home.mockRestore();
+    }
+    expect(files[0]?.path).toBe(path.join(claudeDir, "CLAUDE.md"));
 
     expect(files.map((file) => path.basename(file.path))).toEqual(["CLAUDE.md", "CLAUDE.local.md"]);
     expect(files.map((file) => file.content)).toEqual(["global", "local"]);
@@ -104,11 +114,11 @@ describe("cc context discovery", () => {
     await writeFile(path.join(nested, "CLAUDE.md"), "package claude");
     await writeFile(path.join(project, "CLAUDE.local.md"), "local claude");
 
-    const files = discoverConfiguredClaudeContextFiles(
-      nested,
-      { global: false, project: true, local: true },
-      path.join(root, "agent"),
-    );
+    const files = discoverConfiguredClaudeContextFiles(nested, {
+      global: false,
+      project: true,
+      local: true,
+    });
 
     expect(files.map((file) => path.relative(root, file.path))).toEqual([
       path.join("project", "CLAUDE.md"),
@@ -127,11 +137,11 @@ describe("cc context discovery", () => {
     await writeFile(path.join(project, "CLAUDE.local.md"), "local claude");
     process.env.CLAUDE_PROJECT_DIR = project;
 
-    const files = discoverConfiguredClaudeContextFiles(
-      sandbox,
-      { global: false, project: true, local: true },
-      path.join(root, "agent"),
-    );
+    const files = discoverConfiguredClaudeContextFiles(sandbox, {
+      global: false,
+      project: true,
+      local: true,
+    });
 
     expect(files.map((file) => path.relative(root, file.path))).toEqual([
       path.join("project", "CLAUDE.md"),

@@ -27,6 +27,7 @@ type RunPiOptions = {
   approve?: boolean;
   overrideSettingsPath?: string;
   headless?: boolean;
+  homeDir?: string;
 };
 
 const repoRoot = process.cwd();
@@ -102,6 +103,7 @@ export async function runPiAndCaptureContext(options: RunPiOptions): Promise<Cap
         PI_CODING_AGENT_DIR: options.env.agentDir,
         MY_PI_EXTENSIONS_TEST_OUTPUT: outputPath,
         ANTHROPIC_API_KEY: "test-key",
+        HOME: options.homeDir ?? process.env.HOME,
       },
       stdio: ["ignore", "pipe", "pipe"],
     });

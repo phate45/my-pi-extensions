@@ -27,7 +27,7 @@ const SKILLS_SECTION_HEADER =
 const DATE_HEADER = "\nCurrent date: ";
 
 export function getAgentDir(): string {
-  return path.join(os.homedir(), ".pi", "agent");
+  return process.env.PI_CODING_AGENT_DIR || path.join(os.homedir(), ".pi", "agent");
 }
 
 export function discoverSystemPromptPath(cwd: string, agentDir = getAgentDir()): string | null {
@@ -182,7 +182,6 @@ function discoverProjectContextDirectories(cwd: string, projectRoot: string): st
 export function discoverConfiguredClaudeContextFiles(
   cwd: string,
   claudeFiles: ClaudeFileSourceConfig,
-  agentDir = getAgentDir(),
 ): ContextFile[] {
   const projectRoot = resolveProjectRoot(cwd);
   const files: ContextFile[] = [];
@@ -196,7 +195,7 @@ export function discoverConfiguredClaudeContextFiles(
     files.push(file);
   };
 
-  if (claudeFiles.global) add(readFileIfExists(path.join(agentDir, "CLAUDE.md")));
+  if (claudeFiles.global) add(readFileIfExists(path.join(os.homedir(), ".claude", "CLAUDE.md")));
   if (claudeFiles.project) {
     for (const directory of discoverProjectContextDirectories(cwd, projectRoot)) {
       add(readFileIfExists(path.join(directory, "CLAUDE.md")));
@@ -215,7 +214,7 @@ export function discoverEffectiveContextFiles(
   const files = discoverExtendedContextFiles(cwd, agentDir).filter(
     (file) => !isClaudeContextFilePath(file.path),
   );
-  files.push(...discoverConfiguredClaudeContextFiles(cwd, config.claudeFiles, agentDir));
+  files.push(...discoverConfiguredClaudeContextFiles(cwd, config.claudeFiles));
   return files;
 }
 
@@ -286,7 +285,7 @@ export function replaceProjectContextBlock(
   if (!replacementBlock) return systemPrompt;
 
   const taggedContextPattern =
-    /\n\n<project_context>\n\nProject-specific instructions and guidelines:\n\n[\s\S]*?<\/project_context>\n?/u;
+    /\n\n<project_context>\n+Project-specific instructions and guidelines:\n\n[\s\S]*?<\/project_context>\n?/u;
   if (taggedContextPattern.test(systemPrompt)) {
     return systemPrompt.replace(taggedContextPattern, replacementBlock);
   }
