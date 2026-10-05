@@ -56,7 +56,7 @@ pi --no-skills \
 
 ## Development
 
-The development dependency graph pins Pi's core packages and TypeBox API to `1.0.0` / `1.3.27`. Runtime package peers use Pi's bundled core modules.
+The development dependency graph pins Pi's core packages and TypeBox API to `1.0.3` / `1.3.27`. Runtime package peers use Pi's bundled core modules.
 
 Common commands:
 - `just test`
