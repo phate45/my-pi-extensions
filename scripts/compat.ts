@@ -4,6 +4,7 @@ import { cpSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } f
 import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 import { spawnSync } from "node:child_process";
+import { parseArgs } from "node:util";
 
 const PI_CODING_AGENT = "@earendil-works/pi-coding-agent";
 const PI_DEVELOPMENT_PACKAGES = [
@@ -30,10 +31,48 @@ type CompatibilityDecision =
 
 export function getCompatibilityDecision(
   currentVersion: string,
-  latestVersion: string,
+  targetVersion: string,
+  explicitTarget = false,
 ): CompatibilityDecision {
-  if (Bun.semver.order(currentVersion, latestVersion) >= 0) return { kind: "current" };
-  return { kind: "test", currentVersion, targetVersion: latestVersion };
+  if (!explicitTarget && Bun.semver.order(currentVersion, targetVersion) >= 0) {
+    return { kind: "current" };
+  }
+  return { kind: "test", currentVersion, targetVersion };
+}
+
+export function parseCompatibilityArgs(args: string[]): { apply: boolean; target?: string } {
+  const { values } = parseArgs({
+    args,
+    options: { apply: { type: "boolean" }, target: { type: "string" } },
+    strict: true,
+    allowPositionals: false,
+  });
+  const target = values.target;
+  if (
+    target !== undefined &&
+    (!/^\d+\.\d+\.\d+(?:-[0-9A-Za-z.-]+)?(?:\+[0-9A-Za-z.-]+)?$/.test(target) ||
+      !Bun.semver.satisfies(target, target))
+  ) {
+    throw new Error("--target requires an exact Pi version, for example --target 1.0.4");
+  }
+  return { apply: values.apply ?? false, target };
+}
+
+export function createCompatibilityEnv(
+  root: string,
+  inherited: NodeJS.ProcessEnv = process.env,
+): NodeJS.ProcessEnv {
+  const env: NodeJS.ProcessEnv = {
+    ...inherited,
+    HOME: join(root, "home"),
+    PI_CODING_AGENT_DIR: join(root, "agent"),
+    PI_CODING_AGENT_SESSION_DIR: join(root, "sessions"),
+    PI_OFFLINE: "1",
+    PI_TELEMETRY: "0",
+  };
+  delete env.CLAUDE_PROJECT_DIR;
+  mkdirSync(join(root, "home"), { recursive: true });
+  return env;
 }
 
 export function trustedPiArgs(args: string[]): string[] {
@@ -208,21 +247,9 @@ function removeSourceSnapshot(root: string, snapshot: string): void {
 
 function runRuntimeSmokeTest(snapshot: string, targetVersion: string): void {
   const runtimeRoot = join(snapshot, ".tmp", "compat-runtime");
-  const agentDir = join(runtimeRoot, "agent");
-  const homeDir = join(runtimeRoot, "home");
-  const sessionDir = join(runtimeRoot, "sessions");
   const cwdDir = join(runtimeRoot, "cwd");
-  mkdirSync(homeDir, { recursive: true });
   mkdirSync(cwdDir, { recursive: true });
-
-  const env = {
-    ...process.env,
-    HOME: homeDir,
-    PI_CODING_AGENT_DIR: agentDir,
-    PI_CODING_AGENT_SESSION_DIR: sessionDir,
-    PI_OFFLINE: "1",
-    PI_TELEMETRY: "0",
-  };
+  const env = createCompatibilityEnv(runtimeRoot);
   const pi = join(snapshot, "node_modules", ".bin", "pi");
 
   run(pi, ["install", snapshot], { cwd: cwdDir, env });
@@ -245,12 +272,7 @@ function runRuntimeSmokeTest(snapshot: string, targetVersion: string): void {
 }
 
 async function main(): Promise<void> {
-  const args = process.argv.slice(2);
-  const apply = args.includes("--apply");
-  const unknownArgs = args.filter((arg) => arg !== "--apply");
-  if (unknownArgs.length > 0) {
-    throw new Error(`unknown compatibility arguments: ${unknownArgs.join(", ")}`);
-  }
+  const { apply, target } = parseCompatibilityArgs(process.argv.slice(2));
 
   const root = run("git", ["rev-parse", "--show-toplevel"], {
     cwd: process.cwd(),
@@ -259,24 +281,27 @@ async function main(): Promise<void> {
   const packageJson = readPackageJson(root);
   const currentVersion = getPinnedPiVersion(packageJson);
 
-  console.log(`Checking npm for the latest ${PI_CODING_AGENT} release...`);
-  const latestVersion = npmJson(root, [`${PI_CODING_AGENT}@latest`, "version"]);
-  if (typeof latestVersion !== "string") {
-    throw new Error(`npm returned an invalid latest Pi version: ${JSON.stringify(latestVersion)}`);
+  const requested = target ?? "latest";
+  console.log(`Checking npm for ${PI_CODING_AGENT}@${requested}...`);
+  const targetVersion = npmJson(root, [`${PI_CODING_AGENT}@${requested}`, "version"]);
+  if (typeof targetVersion !== "string" || (target && targetVersion !== target)) {
+    throw new Error(`npm returned an invalid Pi version: ${JSON.stringify(targetVersion)}`);
   }
 
-  const decision = getCompatibilityDecision(currentVersion, latestVersion);
+  const decision = getCompatibilityDecision(currentVersion, targetVersion, target !== undefined);
   if (decision.kind === "current") {
-    console.log(`Pi ${currentVersion} is already current; nothing to test.`);
+    console.log(
+      `Pi ${currentVersion} does not trail npm latest ${targetVersion}; checks skipped. Use --target ${currentVersion} to recheck.`,
+    );
     return;
   }
 
-  const latestDependencies = npmDependencies(root, `${PI_CODING_AGENT}@${decision.targetVersion}`);
-  if (typeof latestDependencies.typebox !== "string") {
-    throw new Error("npm returned no TypeBox dependency for the latest Pi release");
+  const dependencies = npmDependencies(root, `${PI_CODING_AGENT}@${decision.targetVersion}`);
+  if (typeof dependencies.typebox !== "string") {
+    throw new Error("npm returned no TypeBox dependency for the target Pi release");
   }
-  const typeboxVersion = latestDependencies.typebox;
-  const releaseAgeExcludes = getPiReleaseAgeExcludes(latestDependencies, (packageName) =>
+  const typeboxVersion = dependencies.typebox;
+  const releaseAgeExcludes = getPiReleaseAgeExcludes(dependencies, (packageName) =>
     npmDependencies(root, `${packageName}@${decision.targetVersion}`),
   );
 
@@ -301,9 +326,10 @@ async function main(): Promise<void> {
     writeFileSync(join(snapshot, "bunfig.toml"), formatCompatibilityBunfig(releaseAgeExcludes));
 
     run("bun", ["install"], { cwd: snapshot });
-    run("just", ["typecheck-all"], { cwd: snapshot });
-    run("just", ["test"], { cwd: snapshot });
-    run("just", ["lint-ci"], { cwd: snapshot });
+    const env = createCompatibilityEnv(join(snapshot, ".tmp", "compat-checks"));
+    run("just", ["typecheck-all"], { cwd: snapshot, env });
+    run("just", ["test"], { cwd: snapshot, env });
+    run("just", ["lint-ci"], { cwd: snapshot, env });
     runRuntimeSmokeTest(snapshot, decision.targetVersion);
 
     if (apply) {

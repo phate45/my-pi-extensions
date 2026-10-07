@@ -47,13 +47,15 @@ generate-config:
     bun run scripts/generate-config-example.ts
     bun x biome format my-pi-settings.example.json --write
 
-# Test this checkout against the latest Pi release without changing the global installation.
-compat:
-    bun run scripts/compat.ts
+# Test against latest Pi, or --target <version>, without changing the global installation.
+[positional-arguments]
+compat *args:
+    bun run scripts/compat.ts "$@"
 
-# Test against latest Pi, then promote the tested dependency manifest and lockfile.
-compat-update:
-    bun run scripts/compat.ts --apply
+# Test against Pi, then promote the tested dependency manifest and lockfile.
+[positional-arguments]
+compat-update *args:
+    bun run scripts/compat.ts --apply "$@"
 
 # Report the tested Pi pin only when it matches cached origin and package.json is clean.
 [positional-arguments]

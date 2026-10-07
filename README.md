@@ -56,7 +56,7 @@ pi --no-skills \
 
 ## Development
 
-The development dependency graph pins Pi's core packages and TypeBox API to `1.0.4` / `1.3.27`. Runtime package peers use Pi's bundled core modules.
+`package.json` records the exact development pins for Pi's core packages and TypeBox. Runtime package peers use Pi's bundled core modules.
 
 Common commands:
 - `just test`
@@ -68,15 +68,22 @@ Common commands:
 - `just lint-ci`
 - `just generate-config`
 
-`just compat` exits immediately when the pinned Pi SDK does not trail npm's latest release. When npm
-publishes a newer release, the recipe snapshots the current checkout in a temporary worktree,
-updates the snapshot's Pi development dependencies, runs typechecks and tests, and loads the package
-with the new Pi CLI under isolated settings. It removes the snapshot afterward and never changes the
-global Pi installation or settings. The runtime smoke test pre-approves trust and runs from an empty
-isolated directory, so it never prompts for project approval.
+Both compatibility recipes accept `--target <exact-version>`. Resolve the desired version once,
+then use it for every check and promotion. An explicit target always runs the checks, even when it
+matches the current pin or is older. Without a target, the recipes resolve npm's latest release and
+skip checks when the pinned SDK does not trail it. A skip confirms version currency, not compatibility.
 
-After `just compat` passes, run `just compat-update` to repeat the same check and copy the tested
-`package.json` and `bun.lock` into the working checkout. Failed checks leave both files untouched.
+The recipes snapshot the checkout in a temporary worktree, update its Pi development dependencies,
+and run typechecks, tests, formatting checks, and a Pi CLI smoke test. Checks use disposable HOME,
+Pi config, and session directories and ignore inherited `CLAUDE_PROJECT_DIR`. The runtime smoke test
+uses a separate empty environment and pre-approves trust. The recipes remove the snapshot afterward
+and leave the global Pi installation and settings untouched.
+
+For a pin-only upgrade, run `just compat-update --target <exact-version>` directly. It checks before
+copying the tested `package.json` and `bun.lock` into the checkout; failed checks leave both files
+untouched. Use `just compat --target <exact-version>` first when investigating a migration without
+promoting dependencies. After promotion, install with `bun install --frozen-lockfile` and verify the
+checkout with `just test` under an isolated HOME, `just typecheck-all`, and `just lint-ci`.
 
 `just fleet-ready pi` reports the tested `@earendil-works/pi-coding-agent` development pin for fleet
 rollouts. This read-only, offline probe uses Bash, Git, and jq. It prints one bare version and exits 0

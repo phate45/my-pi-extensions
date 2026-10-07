@@ -1,12 +1,14 @@
 import { describe, expect, test } from "bun:test";
-import { mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { existsSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 
 import {
+  createCompatibilityEnv,
   formatCompatibilityBunfig,
   getCompatibilityDecision,
   getPiReleaseAgeExcludes,
+  parseCompatibilityArgs,
   promoteCompatibilityDependencies,
   trustedPiArgs,
   updatePiDevelopmentDependencies,
@@ -21,12 +23,75 @@ describe("compatibility target selection", () => {
     expect(getCompatibilityDecision("0.85.0", "0.84.1")).toEqual({ kind: "current" });
   });
 
+  test("an explicit target rechecks the current pin and permits older-version checks", () => {
+    for (const target of ["1.0.4", "1.0.3"]) {
+      expect(getCompatibilityDecision("1.0.4", target, true)).toEqual({
+        kind: "test",
+        currentVersion: "1.0.4",
+        targetVersion: target,
+      });
+    }
+  });
+
   test("selects npm latest when it is newer than the pinned SDK", () => {
     expect(getCompatibilityDecision("0.83.0", "0.84.1")).toEqual({
       kind: "test",
       currentVersion: "0.83.0",
       targetVersion: "0.84.1",
     });
+  });
+});
+
+describe("compatibility arguments", () => {
+  test("defaults to checking latest without promotion", () => {
+    expect(parseCompatibilityArgs([])).toEqual({ apply: false, target: undefined });
+  });
+
+  test("accepts an exact target with or without promotion", () => {
+    expect(parseCompatibilityArgs(["--target", "1.0.4"])).toEqual({
+      apply: false,
+      target: "1.0.4",
+    });
+    expect(parseCompatibilityArgs(["--apply", "--target", "1.0.4"])).toEqual({
+      apply: true,
+      target: "1.0.4",
+    });
+    expect(parseCompatibilityArgs(["--target", "1.1.0-rc.1"]).target).toBe("1.1.0-rc.1");
+  });
+
+  test("rejects tags, ranges, missing values, and unknown flags", () => {
+    for (const target of ["latest", "^1.0.4", "1.0", "1.0.4 || 1.0.5", ""]) {
+      expect(() => parseCompatibilityArgs(["--target", target])).toThrow("exact Pi version");
+    }
+    expect(() => parseCompatibilityArgs(["--target"])).toThrow();
+    expect(() => parseCompatibilityArgs(["--typo"])).toThrow();
+  });
+});
+
+describe("compatibility environment", () => {
+  test("isolates home, config, and sessions while preserving command lookup", () => {
+    const root = mkdtempSync(join(tmpdir(), "compat-env-"));
+    const inherited = {
+      HOME: "/ambient/home",
+      PI_CODING_AGENT_DIR: "/ambient/agent",
+      PI_CODING_AGENT_SESSION_DIR: "/ambient/sessions",
+      CLAUDE_PROJECT_DIR: "/ambient/project",
+      PATH: "/tools/bin",
+    };
+    try {
+      const env = createCompatibilityEnv(root, inherited);
+      expect(env.HOME).toBe(join(root, "home"));
+      expect(env.PI_CODING_AGENT_DIR).toBe(join(root, "agent"));
+      expect(env.PI_CODING_AGENT_SESSION_DIR).toBe(join(root, "sessions"));
+      expect(env.CLAUDE_PROJECT_DIR).toBeUndefined();
+      expect(env.PATH).toBe(inherited.PATH);
+      expect(env.PI_OFFLINE).toBe("1");
+      expect(env.PI_TELEMETRY).toBe("0");
+      expect(existsSync(env.HOME!)).toBe(true);
+      expect(inherited.HOME).toBe("/ambient/home");
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
   });
 });
 
