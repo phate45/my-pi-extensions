@@ -21,8 +21,8 @@ const MAX_TOKENS = 64_000;
 // placeholder binds `thinking` to pi's own thinking-enabled state, so the session's
 // thinking level (off → false, anything else → true) drives it. Without this,
 // `reasoning: true` is inert and the model's chain-of-thought is dropped on the floor.
-// The MiniMax, Qwen and GLM entries are not DeepSeek models and carry none of this
-// (reasoning surface unknown).
+// Other models do not use this chat-template switch. GLM 5.3 Flash and Qwen3.8 Flash
+// Next use reasoning_effort instead.
 const DEEPSEEK_THINKING = {
   thinkingFormat: "chat-template",
   chatTemplateKwargs: { thinking: { $var: "thinking.enabled" } },
@@ -42,6 +42,17 @@ const GLM_53_LEVELS = {
   high: "high",
   xhigh: "max",
   max: "max",
+};
+
+// Qwen Flash Next always reasons and accepts only low, medium, and xhigh effort.
+const QWEN_38_LEVELS = {
+  off: "low",
+  minimal: "low",
+  low: "low",
+  medium: "medium",
+  high: "xhigh",
+  xhigh: "xhigh",
+  max: "xhigh",
 };
 
 type CatalogEntry = {
@@ -93,6 +104,8 @@ const MODELS: CatalogEntry[] = [
     input: ["text", "image"],
     contextWindow: 256_000,
     cost: { input: 0.2, output: 0.5, cacheRead: 0.05, cacheWrite: 0.2 },
+    thinking: REASONING_EFFORT,
+    thinkingLevelMap: QWEN_38_LEVELS,
   },
   {
     id: "z-ai/glm-5.3-flash",
