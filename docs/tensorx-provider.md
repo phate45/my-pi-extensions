@@ -6,6 +6,31 @@ catalog, and spreads requests across several API keys.
 TensorX meters each key independently, so a 429 on one key is survivable by reissuing the
 same request on another. That is the whole reason the pool exists.
 
+## Models and reasoning
+
+The catalog includes MiniMax M3, MiniMax M3.1 Flash, DeepSeek V4.1 Flash 1017,
+DeepSeek V4 Pro, GLM 5.3 Flash, GLM 5.3, and Kimi K3. The catalog drops the retired
+Qwen3.5 9B and Qwen3.8 Flash Next entries and replaces DeepSeek V4 Flash 0731.
+Update saved model selections that refer to those IDs; the extension does not alias them.
+
+MiniMax M3 and M3.1 Flash use `chat_template_kwargs.thinking_mode`, never
+`reasoning_effort`:
+
+- `off` selects `disabled`.
+- `minimal`, `low`, and `medium` select `adaptive`, letting the model decide whether to reason.
+- `high`, `xhigh`, and `max` select `enabled`, forcing reasoning without grading its depth.
+
+DeepSeek V4.1 Flash 1017 uses `reasoning_effort`: `off` sends `none`,
+`minimal` and `low` send `low`, `medium` through `xhigh` send `high`, and
+`max` sends `max`. GLM 5.3 Flash differs at `xhigh`, which sends `max`.
+DeepSeek V4 Pro retains its boolean `chat_template_kwargs.thinking` switch.
+
+Both new Flash models accept text and images. MiniMax M3.1 Flash costs $0.30 input,
+$0.08 cache read, and $1.20 output per million tokens. DeepSeek V4.1 Flash costs
+$0.50 input, $0.13 cache read, and $1.50 output. Cache writes use the input rate.
+The extension retains local caps of 512,000 context tokens and 64,000 output tokens
+for these models rather than claiming verified provider limits.
+
 ## Keys
 
 `~/.pi/agent/tensorx-keys.json`, mode 0600, outside this repo:

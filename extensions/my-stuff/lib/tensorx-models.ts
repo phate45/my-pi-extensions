@@ -1,7 +1,7 @@
 /**
  * TensorX model catalog. OpenAI-completions-compatible endpoint.
  *
- * cost is USD per 1M tokens, verbatim from https://tensorx.ai/pricing/ (2026-08-28).
+ * Cost is USD per 1M tokens from TensorX pricing.
  * TensorX bills no separate cache-write tier, so cacheWrite mirrors input.
  */
 
@@ -11,18 +11,7 @@ export const TENSORX_BASE_URL = "https://api.tensorx.ai/v1";
 export const TENSORX_API = "openai-completions";
 const MAX_TOKENS = 64_000;
 
-// Enabling reasoning on TensorX's DeepSeek V4 models. They default to NON-thinking on
-// the OpenAI-compatible API; reasoning is turned on by passing
-// `chat_template_kwargs: { thinking: true }` in the request body, after which the
-// response carries `reasoning_content` (+ a `reasoning_tokens` usage count). pi models
-// that exact wire shape with `thinkingFormat: "chat-template"`: it injects
-// `chat_template_kwargs` and parses `reasoning_content` back into a `thinking` content
-// block. `chatTemplateKwargs` is the object sent as `chat_template_kwargs`; the `$var`
-// placeholder binds `thinking` to pi's own thinking-enabled state, so the session's
-// thinking level (off → false, anything else → true) drives it. Without this,
-// `reasoning: true` is inert and the model's chain-of-thought is dropped on the floor.
-// Other models do not use this chat-template switch. GLM 5.3 Flash and Qwen3.8 Flash
-// Next use reasoning_effort instead.
+// DeepSeek V4 Pro uses a boolean chat-template switch rather than reasoning_effort.
 const DEEPSEEK_THINKING = {
   thinkingFormat: "chat-template",
   chatTemplateKwargs: { thinking: { $var: "thinking.enabled" } },
@@ -44,15 +33,31 @@ const GLM_53_LEVELS = {
   max: "max",
 };
 
-// Qwen Flash Next always reasons and accepts only low, medium, and xhigh effort.
-const QWEN_38_LEVELS = {
-  off: "low",
+// DeepSeek Flash keeps xhigh at high; only max requests maximum reasoning.
+const DEEPSEEK_FLASH_LEVELS = {
+  off: "none",
   minimal: "low",
   low: "low",
-  medium: "medium",
-  high: "xhigh",
-  xhigh: "xhigh",
-  max: "xhigh",
+  medium: "high",
+  high: "high",
+  xhigh: "high",
+  max: "max",
+};
+
+const MINIMAX_THINKING = {
+  thinkingFormat: "chat-template",
+  chatTemplateKwargs: { thinking_mode: { $var: "thinking.effort" } },
+};
+
+// MiniMax accepts modes, not graded reasoning effort.
+const MINIMAX_LEVELS = {
+  off: "disabled",
+  minimal: "adaptive",
+  low: "adaptive",
+  medium: "adaptive",
+  high: "enabled",
+  xhigh: "enabled",
+  max: "enabled",
 };
 
 type CatalogEntry = {
@@ -65,16 +70,16 @@ type CatalogEntry = {
   thinkingLevelMap?: Record<string, string | null>;
 };
 
-// contextWindow is set per model rather than shared. The Qwen entries match the 256K
-// window TensorX advertises; the rest are held at 512K against an advertised 1M.
+// Context windows and output limits remain conservative local caps.
 const MODELS: CatalogEntry[] = [
   {
-    id: "deepseek/deepseek-v4-flash-0731",
-    name: "DeepSeek V4 Flash 0731",
-    input: ["text"],
+    id: "deepseek/deepseek-v4.1-flash-1017",
+    name: "DeepSeek V4.1 Flash 1017",
+    input: ["text", "image"],
     contextWindow: 512_000,
-    cost: { input: 0.25, output: 0.3, cacheRead: 0.06, cacheWrite: 0.25 },
-    thinking: DEEPSEEK_THINKING,
+    cost: { input: 0.5, output: 1.5, cacheRead: 0.13, cacheWrite: 0.5 },
+    thinking: REASONING_EFFORT,
+    thinkingLevelMap: DEEPSEEK_FLASH_LEVELS,
   },
   {
     id: "deepseek/deepseek-v4-pro",
@@ -90,22 +95,17 @@ const MODELS: CatalogEntry[] = [
     input: ["text", "image"],
     contextWindow: 512_000,
     cost: { input: 0.4, output: 2.0, cacheRead: 0.1, cacheWrite: 0.4 },
+    thinking: MINIMAX_THINKING,
+    thinkingLevelMap: MINIMAX_LEVELS,
   },
   {
-    id: "qwen/qwen3.5-9b",
-    name: "Qwen3.5 9B",
-    input: ["text"],
-    contextWindow: 256_000,
-    cost: { input: 0.15, output: 0.2, cacheRead: 0.04, cacheWrite: 0.15 },
-  },
-  {
-    id: "qwen/qwen3.8-flash-next",
-    name: "Qwen3.8 Flash Next",
+    id: "minimax/minimax-m3.1-flash",
+    name: "MiniMax M3.1 Flash",
     input: ["text", "image"],
-    contextWindow: 256_000,
-    cost: { input: 0.2, output: 0.5, cacheRead: 0.05, cacheWrite: 0.2 },
-    thinking: REASONING_EFFORT,
-    thinkingLevelMap: QWEN_38_LEVELS,
+    contextWindow: 512_000,
+    cost: { input: 0.3, output: 1.2, cacheRead: 0.08, cacheWrite: 0.3 },
+    thinking: MINIMAX_THINKING,
+    thinkingLevelMap: MINIMAX_LEVELS,
   },
   {
     id: "z-ai/glm-5.3-flash",

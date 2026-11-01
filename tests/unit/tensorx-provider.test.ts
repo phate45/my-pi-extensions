@@ -106,7 +106,7 @@ describe("tensorx provider registration", () => {
       expect(deepseek?.compat.supportsReasoningEffort).toBe(false);
       expect(glm?.thinkingLevelMap).toMatchObject({ off: "none", low: "low", medium: "high" });
       expect(deepseek?.thinkingLevelMap).toBeUndefined();
-      expect(models).toHaveLength(8);
+      expect(models).toHaveLength(7);
     });
   });
 });
