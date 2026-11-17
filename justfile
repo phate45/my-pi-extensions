@@ -1,5 +1,8 @@
 set shell := ["bash", "-cu"]
 
+# Keep temporary fixtures outside home ancestors that supply real Claude rules.
+export TMPDIR := "/tmp"
+
 _default:
     @just --list
 

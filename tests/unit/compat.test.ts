@@ -1,4 +1,5 @@
 import { describe, expect, test } from "bun:test";
+import { execFileSync } from "node:child_process";
 import { existsSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
@@ -69,6 +70,15 @@ describe("compatibility arguments", () => {
 });
 
 describe("compatibility environment", () => {
+  test("recipes keep temporary fixtures outside user-home ancestry", () => {
+    const output = execFileSync("just", ["--command", "printenv", "TMPDIR"], {
+      cwd: new URL("../../", import.meta.url),
+      env: { ...process.env, TMPDIR: "/home/agent/.t3/tmp" },
+      encoding: "utf8",
+    });
+    expect(output.trim()).toBe("/tmp");
+  });
+
   test("isolates home, config, and sessions while preserving command lookup", () => {
     const root = mkdtempSync(join(tmpdir(), "compat-env-"));
     const inherited = {
